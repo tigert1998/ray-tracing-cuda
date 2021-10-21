@@ -1,0 +1,1 @@
+project(ray-tracing-cuda)
