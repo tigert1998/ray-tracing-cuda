@@ -2,6 +2,8 @@
 
 struct HitRecord;
 
+#include <cuda_runtime.h>
+
 #include <memory>
 
 #include "material.h"
@@ -15,6 +17,6 @@ struct HitRecord {
 
 class Hitable {
  public:
-  virtual bool Hit(const Ray &ray, std::pair<double, double> t_range,
-                   HitRecord *out) const = 0;
+  __device__ virtual bool Hit(const Ray &ray, std::pair<double, double> t_range,
+                              HitRecord *out) const = 0;
 };

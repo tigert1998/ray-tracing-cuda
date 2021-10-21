@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "hitable.h"
+#include "hitable.cuh"
 #include "material.h"
 
 class Sphere : public Hitable {
