@@ -6,8 +6,8 @@ struct HitRecord;
 
 #include <memory>
 
-#include "material.h"
-#include "ray.h"
+#include "material.cuh"
+#include "ray.cuh"
 
 struct HitRecord {
   double t;

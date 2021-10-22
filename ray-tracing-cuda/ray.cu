@@ -1,4 +1,4 @@
-#include "ray.h"
+#include "ray.cuh"
 
 using glm::normalize;
 using glm::vec3;

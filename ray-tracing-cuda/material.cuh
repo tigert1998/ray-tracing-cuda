@@ -5,7 +5,7 @@ class Material;
 #include <glm/glm.hpp>
 
 #include "hitable.cuh"
-#include "ray.h"
+#include "ray.cuh"
 
 class Material {
  public:

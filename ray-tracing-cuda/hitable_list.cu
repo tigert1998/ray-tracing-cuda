@@ -1,4 +1,4 @@
-#include "hitable_list.h"
+#include "hitable_list.cuh"
 
 using std::pair;
 
