@@ -15,5 +15,5 @@ class Lambertian : public Material {
   curandState *state_;
   Texture *texture_ptr_;
 
-  glm::vec3 SphericalRand();
+  __device__ glm::vec3 SphericalRand();
 };

@@ -5,7 +5,7 @@
 class Ray {
  public:
   Ray() = delete;
-  Ray(glm::vec3 position, glm::vec3 direction);
+  __device__ __host__ Ray(glm::vec3 position, glm::vec3 direction);
   __device__ __host__ glm::vec3 position() const;
   __device__ __host__ glm::vec3 direction() const;
 

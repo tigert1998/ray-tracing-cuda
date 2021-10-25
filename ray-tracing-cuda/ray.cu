@@ -3,10 +3,11 @@
 using glm::normalize;
 using glm::vec3;
 
-Ray::Ray(vec3 position, vec3 direction) : position_(position) {
+__device__ __host__ Ray::Ray(vec3 position, vec3 direction)
+    : position_(position) {
   direction_ = normalize(direction);
 }
 
-vec3 Ray::position() const { return position_; }
+__device__ __host__ vec3 Ray::position() const { return position_; }
 
-vec3 Ray::direction() const { return direction_; }
+__device__ __host__ vec3 Ray::direction() const { return direction_; }

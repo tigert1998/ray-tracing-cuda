@@ -14,7 +14,7 @@ class Camera : public CudaCopyable {
   double lens_radius_ = -1;
   curandState *state_;
 
-  glm::vec2 DiskRand(float radius);
+  __device__ glm::vec2 DiskRand(float radius);
 
  public:
   Camera() = delete;
@@ -25,10 +25,10 @@ class Camera : public CudaCopyable {
          double focus_distance, curandState *state);
   Camera(glm::vec3 position, glm::vec3 lower_left_corner, glm::vec3 horizontal,
          glm::vec3 vertical, curandState *state);
-  glm::vec3 position() const;
-  glm::vec3 lower_left_corner() const;
-  glm::vec3 horizontal() const;
-  glm::vec3 vertical() const;
-  Ray ray_at(double x, double y);
-  bool is_defocus_camera() const;
+  __device__ glm::vec3 position() const;
+  __device__ glm::vec3 lower_left_corner() const;
+  __device__ glm::vec3 horizontal() const;
+  __device__ glm::vec3 vertical() const;
+  __device__ Ray RayAt(double x, double y);
+  __device__ bool is_defocus_camera() const;
 };

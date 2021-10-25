@@ -47,15 +47,15 @@ Camera::Camera(vec3 position, vec3 lower_left_corner, vec3 horizontal,
   state_ = state;
 }
 
-vec3 Camera::position() const { return position_; }
+__device__ vec3 Camera::position() const { return position_; }
 
-vec3 Camera::lower_left_corner() const { return lower_left_corner_; }
+__device__ vec3 Camera::lower_left_corner() const { return lower_left_corner_; }
 
-vec3 Camera::horizontal() const { return horizontal_; }
+__device__ vec3 Camera::horizontal() const { return horizontal_; }
 
-vec3 Camera::vertical() const { return vertical_; }
+__device__ vec3 Camera::vertical() const { return vertical_; }
 
-Ray Camera::ray_at(double x, double y) {
+__device__ Ray Camera::RayAt(double x, double y) {
   x = (x + 1) / 2;
   y = (y + 1) / 2;
   auto target = lower_left_corner() + static_cast<float>(x) * horizontal() +
@@ -70,9 +70,9 @@ Ray Camera::ray_at(double x, double y) {
   return Ray(origin, target - origin);
 }
 
-bool Camera::is_defocus_camera() const { return is_defocus_camera_; }
+__device__ bool Camera::is_defocus_camera() const { return is_defocus_camera_; }
 
-glm::vec2 Camera::DiskRand(float radius) {
+__device__ glm::vec2 Camera::DiskRand(float radius) {
   return vec2(cudaRandomFloat(0, radius, state_),
               cudaRandomFloat(0, radius, state_));
 }
