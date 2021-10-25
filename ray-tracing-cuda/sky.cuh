@@ -15,7 +15,7 @@ class SkyMaterial : public Material {
 
 class Sky : public Hitable {
  public:
-  Sky();
+  __host__ __device__ Sky();
   __device__ bool Hit(const Ray &ray, std::pair<double, double> t_range,
                       HitRecord *out);
   __device__ __host__ Material *material_ptr();

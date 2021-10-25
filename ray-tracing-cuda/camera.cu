@@ -3,9 +3,10 @@
 
 using namespace glm;
 
-Camera::Camera(vec3 position, vec3 look_at, vec3 up, double field_of_view,
-               double width_height_aspect, double aperture,
-               double focus_distance, curandState *state) {
+__host__ __device__ Camera::Camera(vec3 position, vec3 look_at, vec3 up,
+                                   double field_of_view,
+                                   double width_height_aspect, double aperture,
+                                   double focus_distance, curandState *state) {
   is_defocus_camera_ = true;
   position_ = position;
   w_ = normalize(position - look_at);
@@ -21,8 +22,10 @@ Camera::Camera(vec3 position, vec3 look_at, vec3 up, double field_of_view,
   state_ = state;
 }
 
-Camera::Camera(vec3 position, vec3 look_at, vec3 up, double field_of_view,
-               double width_height_aspect, curandState *state) {
+__host__ __device__ Camera::Camera(vec3 position, vec3 look_at, vec3 up,
+                                   double field_of_view,
+                                   double width_height_aspect,
+                                   curandState *state) {
   is_defocus_camera_ = false;
   position_ = position;
   w_ = normalize(position - look_at);
@@ -37,8 +40,9 @@ Camera::Camera(vec3 position, vec3 look_at, vec3 up, double field_of_view,
   state_ = state;
 }
 
-Camera::Camera(vec3 position, vec3 lower_left_corner, vec3 horizontal,
-               vec3 vertical, curandState *state) {
+__host__ __device__ Camera::Camera(vec3 position, vec3 lower_left_corner,
+                                   vec3 horizontal, vec3 vertical,
+                                   curandState *state) {
   is_defocus_camera_ = false;
   position_ = position;
   lower_left_corner_ = lower_left_corner;

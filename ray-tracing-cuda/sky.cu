@@ -12,7 +12,7 @@ __device__ glm::vec3 SkyMaterial::Emit(double u, double v,
   return (1.0f - t) * glm::vec3(1.0, 1.0, 1.0) + t * glm::vec3(0.5, 0.7, 1.0);
 }
 
-Sky::Sky() {}
+__host__ __device__ Sky::Sky() {}
 
 __device__ bool Sky::Hit(const Ray &ray, std::pair<double, double> t_range,
                          HitRecord *out) {

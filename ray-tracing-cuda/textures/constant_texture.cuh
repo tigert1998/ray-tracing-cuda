@@ -10,6 +10,6 @@ class ConstantTexture : public Texture {
 
  public:
   ConstantTexture() = delete;
-  ConstantTexture(glm::vec3 color);
+  __host__ __device__ ConstantTexture(glm::vec3 color);
   __device__ glm::vec3 Value(double u, double v, const glm::vec3 &p) const;
 };

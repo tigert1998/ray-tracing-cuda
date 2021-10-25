@@ -6,7 +6,8 @@
 using std::pair;
 using namespace glm;
 
-Lambertian::Lambertian(curandState *state, Texture *texture_ptr) {
+__host__ __device__ Lambertian::Lambertian(curandState *state,
+                                           Texture *texture_ptr) {
   state_ = state;
   texture_ptr_ = texture_ptr;
 }

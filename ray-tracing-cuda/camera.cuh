@@ -18,13 +18,16 @@ class Camera : public CudaCopyable {
 
  public:
   Camera() = delete;
-  Camera(glm::vec3 position, glm::vec3 look_at, glm::vec3 up,
-         double field_of_view, double width_height_aspect, curandState *state);
-  Camera(glm::vec3 position, glm::vec3 look_at, glm::vec3 up,
-         double field_of_view, double width_height_aspect, double aperture,
-         double focus_distance, curandState *state);
-  Camera(glm::vec3 position, glm::vec3 lower_left_corner, glm::vec3 horizontal,
-         glm::vec3 vertical, curandState *state);
+  __host__ __device__ Camera(glm::vec3 position, glm::vec3 look_at,
+                             glm::vec3 up, double field_of_view,
+                             double width_height_aspect, curandState *state);
+  __host__ __device__ Camera(glm::vec3 position, glm::vec3 look_at,
+                             glm::vec3 up, double field_of_view,
+                             double width_height_aspect, double aperture,
+                             double focus_distance, curandState *state);
+  __host__ __device__ Camera(glm::vec3 position, glm::vec3 lower_left_corner,
+                             glm::vec3 horizontal, glm::vec3 vertical,
+                             curandState *state);
   __device__ glm::vec3 position() const;
   __device__ glm::vec3 lower_left_corner() const;
   __device__ glm::vec3 horizontal() const;

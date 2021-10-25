@@ -24,4 +24,6 @@ __device__ bool HitableList::Hit(const Ray &ray,
   return ok;
 }
 
-void HitableList::Append(Hitable *obj) { list_[list_len_++] = obj; }
+__host__ __device__ void HitableList::Append(Hitable *obj) {
+  list_[list_len_++] = obj;
+}

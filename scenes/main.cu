@@ -16,10 +16,7 @@
 const int WIDTH = 1280, HEIGHT = 720;
 
 curandState *d_states;
-ConstantTexture *d_const_tex;
-Lambertian *d_lambertian;
-Sphere *d_sphere_0, *d_sphere_1;
-Sky *d_sky;
+
 Camera *d_camera;
 HitableList *d_world;
 glm::vec3 *d_image;
@@ -35,41 +32,40 @@ void Output(std::vector<glm::vec3> &pixels, int height, int width) {
   }
 }
 
+__global__ void InitWorld(HitableList *world, Camera *camera,
+                          curandState *states) {
+  auto const_tex = new ConstantTexture(glm::vec3(0, 1, 0));
+  auto lambertian = new Lambertian(&states[0], const_tex);
+  auto sphere_0 = new Sphere(glm::vec3(0, 0, -1), 0.5, lambertian);
+  auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, lambertian);
+  auto sky = new Sky();
+
+  new (camera)
+      Camera(glm::vec3(3, 3, 2), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
+             glm::radians(20), WIDTH * 1.0 / HEIGHT, &states[1]);
+
+  new (world) HitableList();
+  world->Append(sphere_0);
+  world->Append(sphere_1);
+  world->Append(sky);
+}
+
 int main() {
   cudaError err;
 
-  cudaMalloc(&d_const_tex, sizeof(ConstantTexture));
   cudaMalloc(&d_states, sizeof(curandState) * WIDTH * HEIGHT);
-  cudaMalloc(&d_lambertian, sizeof(Lambertian));
-  cudaMalloc(&d_sphere_0, sizeof(Sphere));
-  cudaMalloc(&d_sphere_1, sizeof(Sphere));
-  cudaMalloc(&d_sky, sizeof(Sky));
-  cudaMalloc(&d_camera, sizeof(Camera));
-  cudaMalloc(&d_world, sizeof(HitableList));
   cudaMalloc(&d_image, sizeof(glm::vec3) * WIDTH * HEIGHT);
+  cudaMalloc(&d_world, sizeof(HitableList));
+  cudaMalloc(&d_camera, sizeof(Camera));
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
-  ConstantTexture const_tex(glm::vec3(0, 1, 0));
-  const_tex.ToDevice(d_const_tex);
-  Lambertian lambertian(&d_states[0], d_const_tex);
-  lambertian.ToDevice(d_lambertian);
-  Sphere sphere_0(glm::vec3(0, 0, -1), 0.5, d_lambertian);
-  sphere_0.ToDevice(d_sphere_0);
-  Sphere sphere_1(glm::vec3(0, -100.5, -1), 100, d_lambertian);
-  sphere_1.ToDevice(d_sphere_1);
-  Sky sky;
-  sky.ToDevice(d_sky);
-  Camera camera(glm::vec3(3, 3, 2), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
-                glm::radians(20), WIDTH * 1.0 / HEIGHT, &d_states[1]);
-  camera.ToDevice(d_camera);
-  HitableList world;
-  world.Append(d_sphere_0);
-  world.Append(d_sphere_1);
-  world.Append(d_sky);
-  world.ToDevice(d_world);
-
   CudaRandomInit<<<WIDTH * HEIGHT / 64, 64>>>(10086, d_states);
+  InitWorld<<<1, 1>>>(d_world, d_camera, d_states);
+  cudaDeviceSynchronize();
+  err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
   dim3 grid(HEIGHT / 8, WIDTH / 8);
   dim3 block(8, 8);
   RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 100, d_states,

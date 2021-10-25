@@ -7,12 +7,14 @@
 
 class HitableList : public Hitable {
  public:
-  const static int kMaxHitables = 32;
+  constexpr static int kMaxHitables = 32;
 
   __device__ bool Hit(const Ray &ray, std::pair<double, double> t_range,
-                      HitRecord *out);
+                      HitRecord *out) override;
 
-  void Append(Hitable *obj);
+  __host__ __device__ void Append(Hitable *obj);
+
+  __inline__ __host__ __device__ int list_len() const { return list_len_; }
 
  private:
   Hitable *list_[kMaxHitables];

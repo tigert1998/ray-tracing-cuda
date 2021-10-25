@@ -7,7 +7,7 @@
 
 class Lambertian : public Material {
  public:
-  Lambertian(curandState *state, Texture *texture_ptr);
+  __host__ __device__ Lambertian(curandState *state, Texture *texture_ptr);
   __device__ bool Scatter(const Ray &ray, const HitRecord &record,
                           glm::vec3 *out_albedo, Ray *out_ray) override;
 
