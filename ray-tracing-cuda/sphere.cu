@@ -6,7 +6,7 @@ Sphere::Sphere(vec3 position, double radius, Material* material_ptr)
     : radius_(radius), position_(position), material_ptr_(material_ptr) {}
 
 __device__ bool Sphere::Hit(const Ray& ray, std::pair<double, double> t_range,
-                 HitRecord* out) const {
+                            HitRecord* out) {
   double a = pow(length(ray.direction()), 2);
   double b = 2 * dot(ray.direction(), ray.position() - this->position());
   double c = pow(length(ray.position() - this->position()), 2) -

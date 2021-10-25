@@ -4,7 +4,7 @@ using std::pair;
 
 __device__ bool HitableList::Hit(const Ray &ray,
                                  std::pair<double, double> t_range,
-                                 HitRecord *out) const {
+                                 HitRecord *out) {
   HitRecord hit_record;
   bool ok = false;
   for (int i = 0; i < list_len_; i++) {

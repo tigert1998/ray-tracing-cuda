@@ -19,5 +19,5 @@ struct HitRecord {
 class Hitable : public CudaCopyable {
  public:
   __device__ virtual bool Hit(const Ray &ray, std::pair<double, double> t_range,
-                              HitRecord *out) const = 0;
+                              HitRecord *out) = 0;
 };

@@ -10,7 +10,7 @@ class HitableList : public Hitable {
   const static int kMaxHitables = 32;
 
   __device__ bool Hit(const Ray &ray, std::pair<double, double> t_range,
-                      HitRecord *out) const;
+                      HitRecord *out);
 
   void Append(Hitable *obj);
 

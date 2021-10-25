@@ -10,7 +10,7 @@ class Sphere : public Hitable {
   Sphere() = delete;
   Sphere(glm::vec3 position, double radius, Material* material_ptr);
   __device__ bool Hit(const Ray& ray, std::pair<double, double> t_range,
-                      HitRecord* out) const;
+                      HitRecord* out);
   __device__ __host__ double radius() const;
   __device__ __host__ glm::vec3 position() const;
   __device__ __host__ Material* material_ptr() const;
