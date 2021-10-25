@@ -6,6 +6,7 @@
 #include "lambertian.cuh"
 #include "sphere.cuh"
 #include "textures/constant_texture.cuh"
+#include "utils.cuh"
 
 const int WIDTH = 1280, HEIGHT = 720;
 
@@ -21,6 +22,7 @@ int main() {
   cudaMalloc(&d_states, sizeof(curandState) * 2);
   cudaMalloc(&d_lambertian, sizeof(Lambertian));
   cudaMalloc(&d_sphere_0, sizeof(Sphere));
+  cudaMalloc(&d_sphere_1, sizeof(Sphere));
   cudaMalloc(&d_camera, sizeof(Camera));
   cudaMalloc(&d_world, sizeof(HitableList));
 
@@ -39,6 +41,8 @@ int main() {
   world.Append(d_sphere_0);
   world.Append(d_sphere_1);
   world.ToDevice(d_world);
+
+  CudaRandomInit<<<2, 1>>>(10086, d_states);
 
   return 0;
 }

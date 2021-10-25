@@ -1,3 +1,5 @@
+#include <tuple>
+
 #include "lambertian.cuh"
 #include "utils.cuh"
 
@@ -9,12 +11,12 @@ Lambertian::Lambertian(curandState *state, Texture *texture_ptr) {
   texture_ptr_ = texture_ptr;
 }
 
-glm::vec3 Lambertian::SphericalRand() {
+__device__ glm::vec3 Lambertian::SphericalRand() {
   float x, y, z, l;
   do {
-    x = cudaRandomFloat(-1, 1, state_);
-    y = cudaRandomFloat(-1, 1, state_);
-    z = cudaRandomFloat(-1, 1, state_);
+    x = CudaRandomFloat(-1, 1, state_);
+    y = CudaRandomFloat(-1, 1, state_);
+    z = CudaRandomFloat(-1, 1, state_);
     l = pow(x * x + y * y + z * z, 0.5);
   } while (l > 1);
   x /= l;
@@ -23,12 +25,13 @@ glm::vec3 Lambertian::SphericalRand() {
   return vec3(x, y, z);
 }
 
-bool Lambertian::Scatter(const Ray &ray, const HitRecord &record,
-                         std::pair<glm::vec3, Ray> *out) {
+__device__ bool Lambertian::Scatter(const Ray &ray, const HitRecord &record,
+                                    glm::vec3 *out_albedo, Ray *out_ray) {
   if (dot(ray.direction(), record.normal) >= 0) return false;
   auto p = ray.position() + float(record.t) * ray.direction();
   auto albedo = texture_ptr_->Value(0, 0, p);
   vec3 next_dir = normalize(SphericalRand() + record.normal);
-  *out = pair<vec3, Ray>(albedo, Ray(p, next_dir));
+  *out_albedo = albedo;
+  *out_ray = Ray(p, next_dir);
   return true;
 }

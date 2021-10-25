@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory(third_party)
 
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
+
 set(ray_tracing_root_dir "ray-tracing-cuda")
 file(GLOB_RECURSE ray_tracing_srcs "${ray_tracing_root_dir}/*.cu")
 add_library(ray_tracing STATIC "${ray_tracing_srcs}")

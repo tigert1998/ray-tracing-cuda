@@ -73,6 +73,6 @@ __device__ Ray Camera::RayAt(double x, double y) {
 __device__ bool Camera::is_defocus_camera() const { return is_defocus_camera_; }
 
 __device__ glm::vec2 Camera::DiskRand(float radius) {
-  return vec2(cudaRandomFloat(0, radius, state_),
-              cudaRandomFloat(0, radius, state_));
+  return vec2(CudaRandomFloat(0, radius, state_),
+              CudaRandomFloat(0, radius, state_));
 }
