@@ -6,6 +6,7 @@ struct HitRecord;
 
 #include <memory>
 
+#include "cuda_copyable.cuh"
 #include "material.cuh"
 #include "ray.cuh"
 
@@ -15,7 +16,7 @@ struct HitRecord {
   Material *material_ptr;
 };
 
-class Hitable {
+class Hitable : public CudaCopyable {
  public:
   __device__ virtual bool Hit(const Ray &ray, std::pair<double, double> t_range,
                               HitRecord *out) const = 0;

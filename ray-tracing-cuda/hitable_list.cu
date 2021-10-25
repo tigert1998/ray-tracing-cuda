@@ -2,7 +2,8 @@
 
 using std::pair;
 
-__device__ bool HitableList::Hit(const Ray &ray, pair<double, double> t_range,
+__device__ bool HitableList::Hit(const Ray &ray,
+                                 std::pair<double, double> t_range,
                                  HitRecord *out) const {
   HitRecord hit_record;
   bool ok = false;
