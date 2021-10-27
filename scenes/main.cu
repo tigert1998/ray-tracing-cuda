@@ -1,12 +1,18 @@
 #include <cstdio>
 #include <fstream>
+#include <glm/glm.hpp>
+#include <glm/gtx/constants.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "camera.cuh"
+#include "diffuse_light.cuh"
 #include "hitable_list.cuh"
 #include "lambertian.cuh"
+#include "parallelepiped.cuh"
+#include "parallelogram.cuh"
 #include "ray_tracing.cuh"
 #include "sky.cuh"
 #include "sphere.cuh"
@@ -32,24 +38,49 @@ void Output(std::vector<glm::vec3> &pixels, int height, int width) {
   }
 }
 
-__global__ void InitWorld(HitableList *world, Camera *camera) {
-  auto green_tex = new ConstantTexture(glm::vec3(0, 1, 0));
-  auto green_lambertian = new Lambertian(green_tex);
-  auto red_tex = new ConstantTexture(glm::vec3(1, 0, 0));
-  auto red_lambertian = new Lambertian(red_tex);
+using glm::pi;
+using glm::rotateX;
+using glm::rotateY;
+using glm::vec3;
 
-  auto sphere_0 = new Sphere(glm::vec3(0, 0, -1), 0.5, red_lambertian);
-  auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, green_lambertian);
+__device__ vec3 RotateBox0(vec3 p) {
+  return rotateY(p, -180 * 0.1f) + vec3(130, 0, 165);
+}
+
+__device__ vec3 RotateBox1(vec3 p) {
+  return rotateY(p, 180 / 12.f) + vec3(265, 0, 295);
+}
+
+__global__ void InitWorld(HitableList *world, Camera *camera) {
+  new (world) HitableList();
+  new (camera) Camera(vec3(278, 278, -800), vec3(278, 278, 0), vec3(0, 1, 0),
+                      pi<double>() * 2 / 9, double(WIDTH) / HEIGHT);
+
+  auto red_material_ptr = new Lambertian(vec3(0.65, 0.05, 0.05));
+  auto white_material_ptr = new Lambertian(vec3(0.73, 0.73, 0.73));
+  auto green_material_ptr = new Lambertian(vec3(0.12, 0.45, 0.15));
+  auto light_material_ptr =
+      new DiffuseLight(new ConstantTexture(vec3(1, 1, 1)));
   auto sky = new Sky();
 
-  new (camera)
-      Camera(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
-             glm::radians<float>(120), WIDTH * 1.0 / HEIGHT);
-
-  new (world) HitableList();
   world->Append(sky);
-  world->Append(sphere_0);
-  world->Append(sphere_1);
+  vec3 parallelograms[] = {
+      vec3(0, 0, 0),       vec3(0, 555, 0),     vec3(0, 0, 555),
+      vec3(555, 0, 0),     vec3(555, 555, 0),   vec3(555, 0, 555),
+      vec3(213, 554, 332), vec3(213, 554, 227), vec3(343, 554, 332),
+      vec3(0, 0, 0),       vec3(555, 0, 0),     vec3(0, 0, 555),
+      vec3(0, 0, 555),     vec3(0, 555, 555),   vec3(555, 0, 555),
+      vec3(0, 555, 0),     vec3(555, 555, 0),   vec3(0, 555, 555)};
+  world->Append(new Parallelogram(&parallelograms[0], red_material_ptr));
+  world->Append(new Parallelogram(&parallelograms[3], green_material_ptr));
+  world->Append(new Parallelogram(&parallelograms[6], light_material_ptr));
+  world->Append(new Parallelogram(&parallelograms[9], white_material_ptr));
+  world->Append(new Parallelogram(&parallelograms[12], white_material_ptr));
+  world->Append(new Parallelogram(&parallelograms[15], white_material_ptr));
+  world->Append(
+      new Parallelepiped(vec3(165, 165, 165), white_material_ptr, RotateBox0));
+  world->Append(
+      new Parallelepiped(vec3(165, 330, 165), white_material_ptr, RotateBox1));
 }
 
 int main() {
@@ -76,7 +107,7 @@ int main() {
     dim3 grid((HEIGHT + block.x - 1) / block.x,
               (WIDTH + block.y - 1) / block.y);
     cudaEventRecord(start);
-    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 100, d_states,
+    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 200, d_states,
                                 d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);

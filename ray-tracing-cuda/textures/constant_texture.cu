@@ -2,6 +2,8 @@
 
 using glm::vec3;
 
+__host__ __device__ ConstantTexture::ConstantTexture() = default;
+
 __host__ __device__ ConstantTexture::ConstantTexture(glm::vec3 color) {
   color_ = color;
 }
