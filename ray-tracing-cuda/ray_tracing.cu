@@ -75,5 +75,7 @@ __global__ void RayTracing(HitableList *world, Camera *camera, int height,
   }
   color /= float(spp);
   color = glm::clamp(color, 0.f, 1.f);
+  // gamma correction
+  color = glm::sqrt(color);
   out_image[idx] = color;
 }

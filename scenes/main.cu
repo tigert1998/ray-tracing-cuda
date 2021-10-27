@@ -32,24 +32,24 @@ void Output(std::vector<glm::vec3> &pixels, int height, int width) {
   }
 }
 
-__global__ void InitWorld(HitableList *world, Camera *camera,
-                          curandState *states) {
-  // auto green_tex = new ConstantTexture(glm::vec3(0, 1, 0));
-  // auto green_lambertian = new Lambertian(&states[0], green_tex);
+__global__ void InitWorld(HitableList *world, Camera *camera) {
+  auto green_tex = new ConstantTexture(glm::vec3(0, 1, 0));
+  auto green_lambertian = new Lambertian(green_tex);
   auto red_tex = new ConstantTexture(glm::vec3(1, 0, 0));
   auto red_lambertian = new Lambertian(red_tex);
 
-  auto sphere_0 = new Sphere(glm::vec3(0, 0, -100), 0.5, red_lambertian);
-  // auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, red_lambertian);
+  auto sphere_0 = new Sphere(glm::vec3(0, 0, -1), 0.5, red_lambertian);
+  auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, green_lambertian);
   auto sky = new Sky();
 
   new (camera)
       Camera(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
-             glm::radians(120), WIDTH * 1.0 / HEIGHT);
+             glm::radians<float>(120), WIDTH * 1.0 / HEIGHT);
 
   new (world) HitableList();
   world->Append(sky);
   world->Append(sphere_0);
+  world->Append(sphere_1);
 }
 
 int main() {
@@ -62,19 +62,30 @@ int main() {
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
+  InitWorld<<<1, 1>>>(d_world, d_camera);
   CudaRandomInit<<<WIDTH * HEIGHT / 64, 64>>>(10086, d_states);
-  InitWorld<<<1, 1>>>(d_world, d_camera, d_states);
   cudaDeviceSynchronize();
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
-  dim3 grid(HEIGHT / 8, WIDTH / 8);
-  dim3 block(8, 8);
-  RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 100, d_states,
-                              d_image);
-  cudaDeviceSynchronize();
-  err = cudaGetLastError();
-  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+  {
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    dim3 block(8, 8);
+    dim3 grid((HEIGHT + block.x - 1) / block.x,
+              (WIDTH + block.y - 1) / block.y);
+    cudaEventRecord(start);
+    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 100, d_states,
+                                d_image);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    err = cudaGetLastError();
+    CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+    float ms;
+    cudaEventElapsedTime(&ms, start, stop);
+    LOG(INFO) << "Ray tracing finished in " << ms << "ms.";
+  }
 
   std::vector<glm::vec3> image(HEIGHT * WIDTH);
   err = cudaMemcpy(image.data(), d_image, sizeof(glm::vec3) * HEIGHT * WIDTH,

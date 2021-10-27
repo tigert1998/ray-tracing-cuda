@@ -66,7 +66,7 @@ __device__ Ray Camera::RayAt(double x, double y, curandState *state) {
   } else {
     origin = position();
   }
-  return Ray(origin, target - origin);
+  return Ray(origin, glm::normalize(target - origin));
 }
 
 __device__ bool Camera::is_defocus_camera() const { return is_defocus_camera_; }
