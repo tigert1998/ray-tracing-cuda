@@ -27,17 +27,6 @@ Camera *d_camera;
 HitableList *d_world;
 glm::vec3 *d_image;
 
-void Output(std::vector<glm::vec3> &pixels, int height, int width) {
-  std::string title = "image.ppm";
-  LOG(INFO) << "Writing to " << title << "..." << std::endl;
-  std::fstream fs(title, std::ios::out);
-  fs << "P3\n" << width << " " << height << "\n255\n";
-  for (int i = 0; i < width * height; i++) {
-    auto color = pixels[i];
-    for (int j = 0; j < 3; j++) fs << int(color[j] * 255) << " ";
-  }
-}
-
 using glm::pi;
 using glm::rotateX;
 using glm::rotateY;
@@ -123,6 +112,6 @@ int main() {
                    cudaMemcpyDeviceToHost);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
-  Output(image, HEIGHT, WIDTH);
+  WriteImage(image, HEIGHT, WIDTH);
   return 0;
 }
