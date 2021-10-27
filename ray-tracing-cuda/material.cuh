@@ -2,6 +2,8 @@
 
 class Material;
 
+#include <curand_kernel.h>
+
 #include <glm/glm.hpp>
 
 #include "cuda_copyable.cuh"
@@ -11,7 +13,8 @@ class Material;
 class Material : public CudaCopyable {
  public:
   __device__ virtual bool Scatter(const Ray &ray, const HitRecord &record,
-                                  glm::vec3 *out_albedo, Ray *out_ray) = 0;
+                                  curandState *state, glm::vec3 *out_albedo,
+                                  Ray *out_ray) = 0;
   __device__ virtual glm::vec3 Emit(double u, double v,
                                     const glm::vec3 &p) const;
 };

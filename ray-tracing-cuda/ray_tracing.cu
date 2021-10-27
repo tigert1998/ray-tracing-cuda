@@ -10,7 +10,7 @@ using std::pair;
 
 constexpr int TRACE_DEPTH_LIMIT = 10;
 
-__device__ glm::vec3 Trace(HitableList *world, Ray ray) {
+__device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
   struct Layer {
     vec3 emitted;
     vec3 attenuation;
@@ -33,7 +33,7 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray) {
     vec3 attenuation;
     Ray reflection;
     bool scattered =
-        material_ptr->Scatter(ray, record, &attenuation, &reflection);
+        material_ptr->Scatter(ray, record, states, &attenuation, &reflection);
     auto hit_point = ray.position() + (float)record.t * ray.direction();
     auto emitted = material_ptr->Emit(0, 0, hit_point);
     if (!scattered) {
@@ -69,8 +69,8 @@ __global__ void RayTracing(HitableList *world, Camera *camera, int height,
                double(height);
     x = 2 * x - 1;
     y = 2 * y - 1;
-    auto ray = camera->RayAt(x, y);
-    auto temp = Trace(world, ray);
+    auto ray = camera->RayAt(x, y, states + idx);
+    auto temp = Trace(world, ray, states + idx);
     color += temp;
   }
   color /= float(spp);

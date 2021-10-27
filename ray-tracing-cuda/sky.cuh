@@ -8,7 +8,8 @@
 class SkyMaterial : public Material {
  public:
   __device__ bool Scatter(const Ray &ray, const HitRecord &record,
-                          glm::vec3 *out_albedo, Ray *out_ray) override;
+                          curandState *, glm::vec3 *out_albedo,
+                          Ray *out_ray) override;
   __device__ glm::vec3 Emit(double u, double v,
                             const glm::vec3 &p) const override;
 };

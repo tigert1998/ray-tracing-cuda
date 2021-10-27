@@ -1,7 +1,8 @@
 #include "sky.cuh"
 
 __device__ bool SkyMaterial::Scatter(const Ray &ray, const HitRecord &record,
-                                     glm::vec3 *out_albedo, Ray *out_ray) {
+                                     curandState *, glm::vec3 *out_albedo,
+                                     Ray *out_ray) {
   return false;
 }
 

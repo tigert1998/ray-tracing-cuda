@@ -7,13 +7,13 @@
 
 class Lambertian : public Material {
  public:
-  __host__ __device__ Lambertian(curandState *state, Texture *texture_ptr);
+  __host__ __device__ Lambertian(Texture *texture_ptr);
   __device__ bool Scatter(const Ray &ray, const HitRecord &record,
-                          glm::vec3 *out_albedo, Ray *out_ray) override;
+                          curandState *state, glm::vec3 *out_albedo,
+                          Ray *out_ray) override;
 
  private:
-  curandState *state_;
   Texture *texture_ptr_;
 
-  __device__ glm::vec3 SphericalRand();
+  __device__ glm::vec3 SphericalRand(curandState *state);
 };

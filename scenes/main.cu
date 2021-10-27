@@ -34,20 +34,22 @@ void Output(std::vector<glm::vec3> &pixels, int height, int width) {
 
 __global__ void InitWorld(HitableList *world, Camera *camera,
                           curandState *states) {
-  auto const_tex = new ConstantTexture(glm::vec3(0, 1, 0));
-  auto lambertian = new Lambertian(&states[0], const_tex);
-  auto sphere_0 = new Sphere(glm::vec3(0, 0, -1), 0.5, lambertian);
-  auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, lambertian);
+  // auto green_tex = new ConstantTexture(glm::vec3(0, 1, 0));
+  // auto green_lambertian = new Lambertian(&states[0], green_tex);
+  auto red_tex = new ConstantTexture(glm::vec3(1, 0, 0));
+  auto red_lambertian = new Lambertian(red_tex);
+
+  auto sphere_0 = new Sphere(glm::vec3(0, 0, -100), 0.5, red_lambertian);
+  // auto sphere_1 = new Sphere(glm::vec3(0, -100.5, -1), 100, red_lambertian);
   auto sky = new Sky();
 
   new (camera)
-      Camera(glm::vec3(3, 3, 2), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
-             glm::radians(20), WIDTH * 1.0 / HEIGHT, &states[1]);
+      Camera(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0),
+             glm::radians(120), WIDTH * 1.0 / HEIGHT);
 
   new (world) HitableList();
-  world->Append(sphere_0);
-  world->Append(sphere_1);
   world->Append(sky);
+  world->Append(sphere_0);
 }
 
 int main() {
