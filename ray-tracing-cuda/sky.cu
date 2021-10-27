@@ -15,10 +15,10 @@ __device__ glm::vec3 SkyMaterial::Emit(double u, double v,
 
 __host__ __device__ Sky::Sky() {}
 
-__device__ bool Sky::Hit(const Ray &ray, std::pair<double, double> t_range,
+__device__ bool Sky::Hit(const Ray &ray, double t_from, double t_to,
                          HitRecord *out) {
   double t = 1e9;
-  if (t_range.first <= t && t <= t_range.second) {
+  if (t_from <= t && t <= t_to) {
     out->material_ptr = &material_;
     out->t = t;
     return true;

@@ -12,6 +12,6 @@ class Parallelogram : public Hitable {
  public:
   Parallelogram() = delete;
   __host__ __device__ Parallelogram(glm::vec3 p[3], Material *material_ptr);
-  __device__ bool Hit(const Ray &ray, std::pair<double, double> t_range,
+  __device__ bool Hit(const Ray &ray, double t_from, double t_to,
                       HitRecord *out) override;
 };

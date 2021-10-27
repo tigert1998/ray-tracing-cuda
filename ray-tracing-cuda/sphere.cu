@@ -6,7 +6,7 @@ __host__ __device__ Sphere::Sphere(vec3 position, double radius,
                                    Material* material_ptr)
     : radius_(radius), position_(position), material_ptr_(material_ptr) {}
 
-__device__ bool Sphere::Hit(const Ray& ray, std::pair<double, double> t_range,
+__device__ bool Sphere::Hit(const Ray& ray, double t_from, double t_to,
                             HitRecord* out) {
   double a = pow(length(ray.direction()), 2);
   double b = 2 * dot(ray.direction(), ray.position() - this->position());
@@ -17,7 +17,7 @@ __device__ bool Sphere::Hit(const Ray& ray, std::pair<double, double> t_range,
     return false;
   }
   double t = (-b - pow(discriminant, 0.5)) / (2 * a);
-  if (t_range.first <= t && t <= t_range.second) {
+  if (t_from <= t && t <= t_to) {
     HitRecord record;
     record.t = t;
     vec3 p = ray.position() + float(t) * ray.direction();
@@ -27,7 +27,7 @@ __device__ bool Sphere::Hit(const Ray& ray, std::pair<double, double> t_range,
     return true;
   }
   t = (-b + pow(discriminant, 0.5)) / (2 * a);
-  if (t_range.first <= t && t <= t_range.second) {
+  if (t_from <= t && t <= t_to) {
     HitRecord record;
     record.t = t;
     vec3 p = ray.position() + float(t) * ray.direction();

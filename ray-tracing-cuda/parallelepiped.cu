@@ -17,10 +17,9 @@ __host__ __device__ Parallelepiped::Parallelepiped(glm::vec3 p[4],
   AddCorner(q, material_ptr);
 }
 
-__device__ bool Parallelepiped::Hit(const Ray &ray,
-                                    pair<double, double> t_range,
+__device__ bool Parallelepiped::Hit(const Ray &ray, double t_from, double t_to,
                                     HitRecord *out) {
-  return list_.Hit(ray, t_range, out);
+  return list_.Hit(ray, t_from, t_to, out);
 }
 
 __device__ __host__ void Parallelepiped::AddCorner(glm::vec3 p[4],

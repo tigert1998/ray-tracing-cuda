@@ -4,13 +4,12 @@ using std::pair;
 
 #include <iostream>
 
-__device__ bool HitableList::Hit(const Ray &ray,
-                                 std::pair<double, double> t_range,
+__device__ bool HitableList::Hit(const Ray &ray, double t_from, double t_to,
                                  HitRecord *out) {
   HitRecord hit_record;
   bool ok = false;
   for (int i = 0; i < list_len_; i++) {
-    auto ret = list_[i]->Hit(ray, t_range, &hit_record);
+    auto ret = list_[i]->Hit(ray, t_from, t_to, &hit_record);
     if (!ret) continue;
     if (!ok) {
       *out = hit_record;

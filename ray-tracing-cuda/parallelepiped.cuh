@@ -24,6 +24,6 @@ class Parallelepiped : public Hitable {
   __host__ __device__
   Parallelepiped(glm::vec3 lengths, Material* material_ptr,
                  nvstd::function<glm::vec3(glm::vec3)> transform);
-  __device__ bool Hit(const Ray& ray, std::pair<double, double> t_range,
+  __device__ bool Hit(const Ray& ray, double t_from, double t_to,
                       HitRecord* out) override;
 };

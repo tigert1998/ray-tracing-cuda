@@ -7,14 +7,14 @@ __host__ __device__ Triangle::Triangle(glm::vec3 p[], Material *material_ptr)
   memcpy(p_, p, sizeof(glm::vec3) * 3);
 }
 
-__device__ bool Triangle::Hit(const Ray &ray, std::pair<double, double> t_range,
+__device__ bool Triangle::Hit(const Ray &ray, double t_from, double t_to,
                               HitRecord *out) {
   vec3 n = normalize(cross(p_[2] - p_[0], p_[1] - p_[2]));
   double den = dot(ray.direction(), n);
   double num = dot(p_[0] - ray.position(), n);
   double t = num / den;
   if (std::isnan(t) || std::isinf(t)) return false;
-  if (t < t_range.first || t > t_range.second) return false;
+  if (t < t_from || t > t_to) return false;
   vec3 hit_point = ray.position() + (float)t * ray.direction();
   {
     double dot_values[3];

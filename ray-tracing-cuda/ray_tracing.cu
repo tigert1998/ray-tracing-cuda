@@ -23,8 +23,7 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
   vec3 result;
   for (int depth = 0;; depth++) {
     HitRecord record;
-    std::pair<double, double> t_range(1e-3, INFINITY);
-    bool hit = world->Hit(ray, t_range, &record);
+    bool hit = world->Hit(ray, 1e-3, INFINITY, &record);
     if (!hit || depth >= TRACE_DEPTH_LIMIT) {
       result = vec3(0, 0, 0);
       break;
