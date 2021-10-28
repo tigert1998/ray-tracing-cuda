@@ -23,7 +23,7 @@ __global__ void CudaRandomInit(uint64_t seed, curandState *state);
 void WriteImage(std::vector<glm::vec3> &pixels, int height, int width,
                 const std::string &path);
 
-__device__ bool TriangleHit(glm::vec3 p[3], const Ray &ray, double t_from,
+__device__ bool TriangleHit(const glm::vec3 p[3], const Ray &ray, double t_from,
                             double t_to, double *out_t, glm::vec3 *out_normal);
 
 template <typename T>
@@ -48,3 +48,6 @@ __device__ void QuickSort(
   if (j > low) QuickSort(array, low, j, comp);
   if (i < high) QuickSort(array, i, high, comp);
 }
+
+struct Layer;
+__device__ void DebugTracePath(Layer *layers, int n);

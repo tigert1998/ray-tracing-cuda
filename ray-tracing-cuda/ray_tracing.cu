@@ -6,19 +6,15 @@
 #include "utils.cuh"
 
 using glm::vec3;
-using std::pair;
 
 constexpr int TRACE_DEPTH_LIMIT = 10;
 
 __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
-  struct Layer {
-    vec3 emitted;
-    vec3 attenuation;
-  };
-
   Layer storage[TRACE_DEPTH_LIMIT];
 
   int storage_size = 0;
+
+  bool should_debug = false;
 
   vec3 result;
   for (int depth = 0;; depth++) {
@@ -39,9 +35,16 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
       result = emitted;
       break;
     }
+    storage[storage_size].t = record.t;
+    storage[storage_size].pos = ray.position();
+    storage[storage_size].target = hit_point;
     storage[storage_size].emitted = emitted;
     storage[storage_size++].attenuation = attenuation;
     ray = reflection;
+  }
+
+  if (should_debug) {
+    DebugTracePath(storage, storage_size);
   }
 
   for (int i = storage_size - 1; i >= 0; i--) {

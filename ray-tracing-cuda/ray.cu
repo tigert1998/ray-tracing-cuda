@@ -10,6 +10,6 @@ __device__ __host__ Ray::Ray(vec3 position, vec3 direction)
   direction_ = normalize(direction);
 }
 
-__device__ __host__ vec3 Ray::position() const { return position_; }
+__device__ __host__ const vec3 Ray::position() const { return position_; }
 
-__device__ __host__ vec3 Ray::direction() const { return direction_; }
+__device__ __host__ const vec3 Ray::direction() const { return direction_; }
