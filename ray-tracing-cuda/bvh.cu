@@ -5,6 +5,7 @@ using glm::vec3;
 
 __device__ bool BB::CheckOnPlane(const Ray &ray, double t, double t_from,
                                  double t_to, int axis) {
+  if (std::isnan(t) || std::isinf(t)) return false;
   if (!(t_from <= t && t <= t_to)) return false;
   vec3 pt_on_plane = ray.position() + (float)t * ray.direction();
   for (int i = 0; i < 3; i++) {
@@ -59,7 +60,7 @@ __device__ BVHNode::BVHNode(Face *faces, int n) : faces_(faces), n_(n) {
 
 __device__ bool BVHNode::Hit(const Ray &ray, double t_from, double t_to,
                              HitRecord *out) {
-  if (n_ <= kMinFaces) {
+  if (left_ == nullptr) {
     bool ret = false;
     for (int i = 0; i < n_; i++) {
       double t;

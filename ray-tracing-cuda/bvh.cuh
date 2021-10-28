@@ -21,7 +21,8 @@ struct BB : public Hitable {
 
 class BVHNode : public Hitable {
  private:
-  constexpr static int kMinFaces = 3;
+  // tuned for 2080 ti
+  constexpr static int kMinFaces = 4096;
 
   Face *faces_;
   int n_, mid_;
