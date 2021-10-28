@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <fstream>
 #include <glm/glm.hpp>
-#include <glm/gtx/constants.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <string>
@@ -13,9 +13,11 @@
 
 #include "bvh.cuh"
 #include "camera.cuh"
+#include "dielectric.cuh"
 #include "diffuse_light.cuh"
 #include "hitable_list.cuh"
 #include "lambertian.cuh"
+#include "metal.cuh"
 #include "parallelepiped.cuh"
 #include "parallelogram.cuh"
 #include "ray_tracing.cuh"
@@ -46,8 +48,13 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
 }
 
 __global__ void InitModel(HitableList *world, Face *faces, int n) {
+  auto white_material_ptr = new Metal(vec3(0.72, 0.72, 0.72));
   auto green_material_ptr = new Lambertian(vec3(0.12, 0.45, 0.15));
-  auto bvh = new BVH(faces, n, green_material_ptr);
+  vec3 parallelograms[] = {vec3(-0.025 - 0.5, 0.1 - 0.5, 1.2),
+                           vec3(-0.025 + 0.5, 0.1 - 0.5, 1.2),
+                           vec3(-0.025 - 0.5, 0.1 + 0.5, 1.2)};
+  world->Append(new Parallelogram(&parallelograms[0], green_material_ptr));
+  auto bvh = new BVH(faces, n, white_material_ptr);
   world->Append(bvh);
 }
 
@@ -105,7 +112,7 @@ int main() {
     dim3 grid((HEIGHT + block.x - 1) / block.x,
               (WIDTH + block.y - 1) / block.y);
     cudaEventRecord(start);
-    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 200, d_states,
+    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 20, d_states,
                                 d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
