@@ -112,6 +112,6 @@ int main() {
                    cudaMemcpyDeviceToHost);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
-  WriteImage(image, HEIGHT, WIDTH);
+  WriteImage(image, HEIGHT, WIDTH, "image.jpeg");
   return 0;
 }

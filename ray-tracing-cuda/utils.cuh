@@ -5,6 +5,8 @@
 #include <stdint.h>
 
 #include <glm/glm.hpp>
+#include <nvfunctional>
+#include <string>
 #include <vector>
 
 __inline__ __device__ float CudaRandomFloat(float min, float max,
@@ -16,4 +18,28 @@ __inline__ __device__ float CudaRandomFloat(float min, float max,
 
 __global__ void CudaRandomInit(uint64_t seed, curandState *state);
 
-void WriteImage(std::vector<glm::vec3> &pixels, int height, int width);
+void WriteImage(std::vector<glm::vec3> &pixels, int height, int width,
+                const std::string &path);
+
+template <typename T>
+__device__ void QuickSort(
+    T *array, int low, int high,
+    const nvstd::function<int(const T &, const T &)> &comp) {
+  int i = low;
+  int j = high;
+  T &pivot = array[(i + j) / 2];
+
+  while (i <= j) {
+    while (comp(array[i], pivot) < 0) i++;
+    while (comp(array[j], pivot) > 0) j--;
+    if (i <= j) {
+      auto temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
+      i++;
+      j--;
+    }
+  }
+  if (j > low) QuickSort(array, low, j, comp);
+  if (i < high) QuickSort(array, i, high, comp);
+}

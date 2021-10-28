@@ -7,3 +7,14 @@ target_include_directories(glm INTERFACE "${glm_dir}")
 
 # glog
 add_subdirectory(glog)
+
+# assimp
+find_package(assimp REQUIRED)
+add_library(assimp INTERFACE)
+target_include_directories(assimp INTERFACE "${ASSIMP_INCLUDE_DIRS}")
+target_link_libraries(assimp INTERFACE "${ASSIMP_LIBRARY_DIRS}/${ASSIMP_LIBRARIES}")
+
+# stb
+set(stb_dir "stb")
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE "${stb_dir}")
