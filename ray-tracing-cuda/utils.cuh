@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "ray.cuh"
+
 __inline__ __device__ float CudaRandomFloat(float min, float max,
                                             curandState *state) {
   // (min, max]
@@ -20,6 +22,9 @@ __global__ void CudaRandomInit(uint64_t seed, curandState *state);
 
 void WriteImage(std::vector<glm::vec3> &pixels, int height, int width,
                 const std::string &path);
+
+__device__ bool TriangleHit(glm::vec3 p[3], const Ray &ray, double t_from,
+                            double t_to, double *out_t, glm::vec3 *out_normal);
 
 template <typename T>
 __device__ void QuickSort(
