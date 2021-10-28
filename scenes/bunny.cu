@@ -48,7 +48,7 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
 }
 
 __global__ void InitModel(HitableList *world, Face *faces, int n) {
-  auto white_material_ptr = new Metal(vec3(0.72, 0.72, 0.72));
+  auto white_material_ptr = new Lambertian(vec3(0.72, 0.72, 0.72));
   auto green_material_ptr = new Lambertian(vec3(0.12, 0.45, 0.15));
   vec3 parallelograms[] = {vec3(-0.025 - 0.5, 0.1 - 0.5, 1.2),
                            vec3(-0.025 + 0.5, 0.1 - 0.5, 1.2),

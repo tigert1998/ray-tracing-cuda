@@ -17,7 +17,6 @@ __device__ bool BB::CheckOnPlane(const Ray &ray, double t, double t_from,
 
 __device__ bool BB::Hit(const Ray &ray, double t_from, double t_to,
                         HitRecord *out) {
-  vec3 pt_on_plane;
   vec3 dir = ray.direction(), pos = ray.position();
 
   for (int i = 0; i < 3; i++) {

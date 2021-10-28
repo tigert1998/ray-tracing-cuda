@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <fstream>
 #include <glm/glm.hpp>
-#include <glm/gtx/constants.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <string>
