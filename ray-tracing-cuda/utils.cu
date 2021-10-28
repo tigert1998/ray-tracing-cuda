@@ -62,7 +62,7 @@ __device__ bool TriangleHit(const vec3 p[3], const Ray &ray, double t_from,
   return true;
 }
 
-void WriteImage(std::vector<vec3> &pixels, int height, int width,
+void WriteImage(const std::vector<vec3> &pixels, int height, int width,
                 const std::string &path) {
   std::vector<uint8_t> data;
   data.resize(pixels.size() * 3);
@@ -83,5 +83,61 @@ __device__ void DebugTracePath(Layer *layers, int n) {
         layers[i].t, layers[i].attenuation[0], layers[i].attenuation[1],
         layers[i].attenuation[2], layers[i].emitted[0], layers[i].emitted[1],
         layers[i].emitted[2]);
+  }
+}
+
+__host__ __device__ void GetWorkload(int height, int width, int rank,
+                                     int world_size, int *out_i_from,
+                                     int *out_j_from, int *out_height_per_proc,
+                                     int *out_width_per_proc) {
+  int div = width / world_size;
+  int mod = width % world_size;
+  *out_height_per_proc = height;
+  *out_width_per_proc = div + (rank < mod);
+  *out_i_from = 0;
+  if (rank < mod) {
+    *out_j_from = (div + 1) * rank;
+  } else {
+    *out_j_from = (div + 1) * mod + div * (rank - mod);
+  }
+}
+
+__host__ void GatherImageData(int height, int width,
+                              const std::vector<glm::vec3> &send_buf,
+                              std::vector<glm::vec3> *out_image) {
+  int rank, world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  std::vector<int> i_froms(world_size), j_froms(world_size),
+      height_per_procs(world_size), width_per_procs(world_size),
+      dis(world_size), counts(world_size);
+
+  for (int i = 0; i < world_size; i++) {
+    GetWorkload(height, width, i, world_size, &i_froms[i], &j_froms[i],
+                &height_per_procs[i], &width_per_procs[i]);
+    counts[i] = height_per_procs[i] * width_per_procs[i] * sizeof(glm::vec3);
+    if (i == 0) {
+      dis[0] = 0;
+    } else {
+      dis[i] = dis[i - 1] + counts[i - 1];
+    }
+  }
+
+  std::vector<glm::vec3> gathered(height * width);
+  MPI_Gatherv(send_buf.data(), counts[rank], MPI_BYTE, gathered.data(),
+              counts.data(), dis.data(), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+  if (rank == 0) {
+    out_image->resize(height * width);
+    for (int other = 0; other < world_size; other++) {
+      for (int i = 0; i < height_per_procs[other]; i++)
+        for (int j = 0; j < width_per_procs[other]; j++) {
+          int idx =
+              i * width_per_procs[other] + j + dis[other] / sizeof(glm::vec3);
+          int to_idx = (i_froms[other] + i) * width + (j_froms[other] + j);
+          out_image->operator[](to_idx) = gathered[idx];
+        }
+    }
   }
 }

@@ -1,6 +1,7 @@
 #include <assimp/cimport.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <mpi.h>
 
 #include <cstdio>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "bvh.cuh"
@@ -37,6 +39,7 @@ Face *d_faces;
 
 using glm::pi;
 using glm::vec3;
+using std::tuple;
 
 __global__ void InitWorld(HitableList *world, Camera *camera) {
   new (world) HitableList();
@@ -86,18 +89,46 @@ void ImportModel(const std::string &path) {
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 }
 
-int main() {
+tuple<int, int> InitCudaAndMPI(int argc, char **argv) {
+  int rank, world_size;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int device_count;
+  cudaGetDeviceCount(&device_count);
+  int device = rank % device_count;
+  cudaSetDevice(device);
+  LOG(INFO) << "[" << rank << " / " << world_size
+            << "] binding to cuda:" << device;
+  auto err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  return tuple<int, int>{rank, world_size};
+}
+
+int main(int argc, char **argv) {
+  int rank, world_size, i_from, j_from, height_per_proc, width_per_proc;
+  std::tie(rank, world_size) = InitCudaAndMPI(argc, argv);
+  GetWorkload(HEIGHT, WIDTH, rank, world_size, &i_from, &j_from,
+              &height_per_proc, &width_per_proc);
+  LOG(INFO) << "[" << rank << " / " << world_size << "] workload: (" << i_from
+            << ", " << j_from << ", " << i_from + height_per_proc << ", "
+            << j_from + width_per_proc << ")";
+
   cudaError err;
 
-  cudaMalloc(&d_states, sizeof(curandState) * WIDTH * HEIGHT);
-  cudaMalloc(&d_image, sizeof(glm::vec3) * WIDTH * HEIGHT);
+  cudaMalloc(&d_states, sizeof(curandState) * width_per_proc * height_per_proc);
+  cudaMalloc(&d_image, sizeof(glm::vec3) * width_per_proc * height_per_proc);
   cudaMalloc(&d_world, sizeof(HitableList));
   cudaMalloc(&d_camera, sizeof(Camera));
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
   InitWorld<<<1, 1>>>(d_world, d_camera);
-  CudaRandomInit<<<WIDTH * HEIGHT / 64, 64>>>(10086, d_states);
+  CudaRandomInit<<<width_per_proc * height_per_proc / 64, 64>>>(10086,
+                                                                d_states);
   cudaDeviceSynchronize();
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
@@ -109,25 +140,34 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     dim3 block(8, 8);
-    dim3 grid((HEIGHT + block.x - 1) / block.x,
-              (WIDTH + block.y - 1) / block.y);
+    dim3 grid((height_per_proc + block.x - 1) / block.x,
+              (width_per_proc + block.y - 1) / block.y);
     cudaEventRecord(start);
-    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 20, d_states,
-                                d_image);
+    DistributedRayTracing<<<grid, block>>>(rank, world_size, d_world, d_camera,
+                                           HEIGHT, WIDTH, 20, d_states,
+                                           d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     err = cudaGetLastError();
     CHECK(err == cudaSuccess) << cudaGetErrorString(err);
     float ms;
     cudaEventElapsedTime(&ms, start, stop);
-    LOG(INFO) << "Ray tracing finished in " << ms << "ms.";
+    LOG(INFO) << "[" << rank << " / " << world_size
+              << "] Ray tracing finished in " << ms << "ms.";
   }
 
-  std::vector<glm::vec3> image(HEIGHT * WIDTH);
-  err = cudaMemcpy(image.data(), d_image, sizeof(glm::vec3) * HEIGHT * WIDTH,
+  std::vector<glm::vec3> image(height_per_proc * width_per_proc);
+  err = cudaMemcpy(image.data(), d_image,
+                   sizeof(glm::vec3) * height_per_proc * width_per_proc,
                    cudaMemcpyDeviceToHost);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
-  WriteImage(image, HEIGHT, WIDTH, "image.jpeg");
+  std::vector<glm::vec3> final_image;
+  GatherImageData(HEIGHT, WIDTH, image, &final_image);
+  if (rank == 0) {
+    WriteImage(final_image, HEIGHT, WIDTH, "image.jpeg");
+  }
+
+  MPI_Finalize();
   return 0;
 }

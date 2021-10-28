@@ -9,7 +9,7 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --extended-la
 set(ray_tracing_root_dir "ray-tracing-cuda")
 file(GLOB_RECURSE ray_tracing_srcs "${ray_tracing_root_dir}/*.cu")
 add_library(ray_tracing STATIC "${ray_tracing_srcs}")
-target_link_libraries(ray_tracing glm glog::glog stb librt.so)
+target_link_libraries(ray_tracing glm glog::glog stb mpi librt.so)
 target_include_directories(ray_tracing PUBLIC "${ray_tracing_root_dir}")
 set_target_properties(ray_tracing PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_compile_features(ray_tracing PUBLIC cxx_std_14)

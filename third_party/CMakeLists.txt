@@ -18,3 +18,8 @@ target_link_libraries(assimp INTERFACE "${ASSIMP_LIBRARY_DIRS}/${ASSIMP_LIBRARIE
 set(stb_dir "stb")
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${stb_dir}")
+
+find_package(MPI REQUIRED)
+add_library(mpi INTERFACE)
+target_include_directories(mpi INTERFACE "${MPI_C_INCLUDE_PATH}")
+target_link_libraries(mpi INTERFACE "${MPI_C_LIBRARIES}")
