@@ -51,8 +51,8 @@ __global__ void InitWorld(HitableList *world, Camera *camera,
 
   world->Append(new Sky());
 
-  for (int a = -3; a < 3; a++) {
-    for (int b = -3; b < 3; b++) {
+  for (int a = -11; a < 11; a++) {
+    for (int b = -11; b < 11; b++) {
       auto choose_mat = CudaRandomFloat(0, 1, state);
       vec3 center(a + CudaRandomFloat(0, 0.9, state), 0.2,
                   b + CudaRandomFloat(0, 0.9, state));
@@ -80,12 +80,31 @@ __global__ void InitWorld(HitableList *world, Camera *camera,
   }
 }
 
-int main() {
-  Main(
+void InitCudaAndMPI(int argc, char **argv) {
+  int rank, world_size;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int device_count;
+  cudaGetDeviceCount(&device_count);
+  int device = rank % device_count;
+  cudaSetDevice(device);
+  LOG(INFO) << "[" << rank << " / " << world_size
+            << "] binding to cuda:" << device;
+  auto err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+}
+
+int main(int argc, char **argv) {
+  InitCudaAndMPI(argc, argv);
+  DistributedMain(
       &d_states, &d_camera, &d_world, &d_image,
       [](HitableList *world, Camera *camera) {
         InitWorld<<<1, 1>>>(world, camera, d_states);
       },
-      HEIGHT, WIDTH, 200);
+      HEIGHT, WIDTH, 30);
+  MPI_Finalize();
   return 0;
 }

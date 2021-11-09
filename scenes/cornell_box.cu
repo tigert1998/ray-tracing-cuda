@@ -58,12 +58,14 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
   world->Append(new Parallelogram(&parallelograms[9], white_material_ptr));
   world->Append(new Parallelogram(&parallelograms[12], white_material_ptr));
   world->Append(new Parallelogram(&parallelograms[15], white_material_ptr));
-  world->Append(new Parallelepiped(
-      vec3(165, 165, 165), white_material_ptr,
-      [](vec3 p) { return rotateY(p, -180 * 0.1f) + vec3(130, 0, 165); }));
-  world->Append(new Parallelepiped(
-      vec3(165, 330, 165), white_material_ptr,
-      [](vec3 p) { return rotateY(p, 180 / 12.f) + vec3(265, 0, 295); }));
+  world->Append(
+      new Parallelepiped(vec3(165, 165, 165), white_material_ptr, [](vec3 p) {
+        return rotateY(p, -glm::pi<float>() * 0.1f) + vec3(130, 0, 165);
+      }));
+  world->Append(
+      new Parallelepiped(vec3(165, 330, 165), white_material_ptr, [](vec3 p) {
+        return rotateY(p, glm::pi<float>() / 12.f) + vec3(265, 0, 295);
+      }));
 }
 
 int main() {

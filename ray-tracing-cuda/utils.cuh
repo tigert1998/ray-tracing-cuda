@@ -70,3 +70,9 @@ __host__ void Main(
     glm::vec3 **d_image,
     nvstd::function<void(HitableList *world, Camera *camera)> init_world,
     int height, int width, int spp);
+
+__host__ void DistributedMain(
+    curandState **d_states, Camera **d_camera, HitableList **d_world,
+    glm::vec3 **d_image,
+    nvstd::function<void(HitableList *world, Camera *camera)> init_world,
+    int height, int width, int spp);

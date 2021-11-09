@@ -191,3 +191,68 @@ __host__ void Main(
 
   WriteImage(image, height, width, "image.jpeg");
 }
+
+__host__ void DistributedMain(
+    curandState **d_states, Camera **d_camera, HitableList **d_world,
+    glm::vec3 **d_image,
+    nvstd::function<void(HitableList *world, Camera *camera)> init_world,
+    int height, int width, int spp) {
+  int rank, world_size, i_from, j_from, height_per_proc, width_per_proc;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  GetWorkload(height, width, rank, world_size, &i_from, &j_from,
+              &height_per_proc, &width_per_proc);
+  LOG(INFO) << "[" << rank << " / " << world_size << "] workload: (" << i_from
+            << ", " << j_from << ", " << i_from + height_per_proc << ", "
+            << j_from + width_per_proc << ")";
+
+  cudaError err;
+
+  cudaMalloc(d_states, sizeof(curandState) * width_per_proc * height_per_proc);
+  cudaMalloc(d_image, sizeof(glm::vec3) * width_per_proc * height_per_proc);
+  cudaMalloc(d_world, sizeof(HitableList));
+  cudaMalloc(d_camera, sizeof(Camera));
+  err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  CudaRandomInit<<<(width_per_proc * height_per_proc + 63) / 64, 64>>>(
+      10086, *d_states, height_per_proc * width_per_proc);
+  init_world(*d_world, *d_camera);
+
+  cudaDeviceSynchronize();
+  err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  {
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    dim3 block(8, 8);
+    dim3 grid((height_per_proc + block.x - 1) / block.x,
+              (width_per_proc + block.y - 1) / block.y);
+    cudaEventRecord(start);
+    DistributedRayTracing<<<grid, block>>>(rank, world_size, *d_world,
+                                           *d_camera, height, width, spp,
+                                           *d_states, *d_image);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    err = cudaGetLastError();
+    CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+    float ms;
+    cudaEventElapsedTime(&ms, start, stop);
+    LOG(INFO) << "[" << rank << " / " << world_size
+              << "] Ray tracing finished in " << ms << "ms.";
+  }
+
+  std::vector<glm::vec3> image(height_per_proc * width_per_proc);
+  err = cudaMemcpy(image.data(), *d_image,
+                   sizeof(glm::vec3) * height_per_proc * width_per_proc,
+                   cudaMemcpyDeviceToHost);
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  std::vector<glm::vec3> final_image;
+  GatherImageData(height, width, image, &final_image);
+  if (rank == 0) {
+    WriteImage(final_image, height, width, "image.jpeg");
+  }
+}
