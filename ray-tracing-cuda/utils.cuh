@@ -11,6 +11,8 @@
 #include <tuple>
 #include <vector>
 
+#include "camera.cuh"
+#include "hitable_list.cuh"
 #include "ray.cuh"
 
 __inline__ __device__ float CudaRandomFloat(float min, float max,
@@ -20,7 +22,7 @@ __inline__ __device__ float CudaRandomFloat(float min, float max,
   return t * (max - min) + min;
 }
 
-__global__ void CudaRandomInit(uint64_t seed, curandState *state);
+__global__ void CudaRandomInit(uint64_t seed, curandState *state, int n);
 
 void WriteImage(const std::vector<glm::vec3> &pixels, int height, int width,
                 const std::string &path);
@@ -62,3 +64,9 @@ __host__ __device__ void GetWorkload(int height, int width, int rank,
 __host__ void GatherImageData(int height, int width,
                               const std::vector<glm::vec3> &send_buf,
                               std::vector<glm::vec3> *out_image);
+
+__host__ void Main(
+    curandState **d_states, Camera **d_camera, HitableList **d_world,
+    glm::vec3 **d_image,
+    nvstd::function<void(HitableList *world, Camera *camera)> init_world,
+    int height, int width, int spp);

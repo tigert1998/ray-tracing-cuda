@@ -32,14 +32,6 @@ using glm::rotateX;
 using glm::rotateY;
 using glm::vec3;
 
-__device__ vec3 RotateBox0(vec3 p) {
-  return rotateY(p, -180 * 0.1f) + vec3(130, 0, 165);
-}
-
-__device__ vec3 RotateBox1(vec3 p) {
-  return rotateY(p, 180 / 12.f) + vec3(265, 0, 295);
-}
-
 __global__ void InitWorld(HitableList *world, Camera *camera) {
   new (world) HitableList();
   new (camera) Camera(vec3(278, 278, -800), vec3(278, 278, 0), vec3(0, 1, 0),
@@ -66,52 +58,20 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
   world->Append(new Parallelogram(&parallelograms[9], white_material_ptr));
   world->Append(new Parallelogram(&parallelograms[12], white_material_ptr));
   world->Append(new Parallelogram(&parallelograms[15], white_material_ptr));
-  world->Append(
-      new Parallelepiped(vec3(165, 165, 165), white_material_ptr, RotateBox0));
-  world->Append(
-      new Parallelepiped(vec3(165, 330, 165), white_material_ptr, RotateBox1));
+  world->Append(new Parallelepiped(
+      vec3(165, 165, 165), white_material_ptr,
+      [](vec3 p) { return rotateY(p, -180 * 0.1f) + vec3(130, 0, 165); }));
+  world->Append(new Parallelepiped(
+      vec3(165, 330, 165), white_material_ptr,
+      [](vec3 p) { return rotateY(p, 180 / 12.f) + vec3(265, 0, 295); }));
 }
 
 int main() {
-  cudaError err;
-
-  cudaMalloc(&d_states, sizeof(curandState) * WIDTH * HEIGHT);
-  cudaMalloc(&d_image, sizeof(glm::vec3) * WIDTH * HEIGHT);
-  cudaMalloc(&d_world, sizeof(HitableList));
-  cudaMalloc(&d_camera, sizeof(Camera));
-  err = cudaGetLastError();
-  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-
-  InitWorld<<<1, 1>>>(d_world, d_camera);
-  CudaRandomInit<<<WIDTH * HEIGHT / 64, 64>>>(10086, d_states);
-  cudaDeviceSynchronize();
-  err = cudaGetLastError();
-  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-
-  {
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    dim3 block(8, 8);
-    dim3 grid((HEIGHT + block.x - 1) / block.x,
-              (WIDTH + block.y - 1) / block.y);
-    cudaEventRecord(start);
-    RayTracing<<<grid, block>>>(d_world, d_camera, HEIGHT, WIDTH, 200, d_states,
-                                d_image);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    err = cudaGetLastError();
-    CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-    float ms;
-    cudaEventElapsedTime(&ms, start, stop);
-    LOG(INFO) << "Ray tracing finished in " << ms << "ms.";
-  }
-
-  std::vector<glm::vec3> image(HEIGHT * WIDTH);
-  err = cudaMemcpy(image.data(), d_image, sizeof(glm::vec3) * HEIGHT * WIDTH,
-                   cudaMemcpyDeviceToHost);
-  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-
-  WriteImage(image, HEIGHT, WIDTH, "image.jpeg");
+  Main(
+      &d_states, &d_camera, &d_world, &d_image,
+      [](HitableList *world, Camera *camera) {
+        InitWorld<<<1, 1>>>(world, camera);
+      },
+      HEIGHT, WIDTH, 200);
   return 0;
 }

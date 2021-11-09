@@ -7,7 +7,7 @@
 
 class HitableList : public Hitable {
  public:
-  constexpr static int kMaxHitables = 32;
+  constexpr static int kMaxHitables = 1024;
 
   __device__ bool Hit(const Ray &ray, double t_from, double t_to,
                       HitRecord *out) override;

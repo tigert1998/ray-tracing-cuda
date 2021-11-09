@@ -127,8 +127,8 @@ int main(int argc, char **argv) {
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
   InitWorld<<<1, 1>>>(d_world, d_camera);
-  CudaRandomInit<<<width_per_proc * height_per_proc / 64, 64>>>(10086,
-                                                                d_states);
+  CudaRandomInit<<<(width_per_proc * height_per_proc + 63) / 64, 64>>>(
+      10086, d_states, height_per_proc * width_per_proc);
   cudaDeviceSynchronize();
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);

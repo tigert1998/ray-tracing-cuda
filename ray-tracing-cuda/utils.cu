@@ -22,8 +22,9 @@ using glm::dot;
 using glm::normalize;
 using glm::vec3;
 
-__global__ void CudaRandomInit(uint64_t seed, curandState *state) {
+__global__ void CudaRandomInit(uint64_t seed, curandState *state, int n) {
   int idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (idx >= n) return;
   curand_init(seed, idx, 0, &state[idx]);
 }
 
@@ -140,4 +141,53 @@ __host__ void GatherImageData(int height, int width,
         }
     }
   }
+}
+
+__host__ void Main(
+    curandState **d_states, Camera **d_camera, HitableList **d_world,
+    glm::vec3 **d_image,
+    nvstd::function<void(HitableList *world, Camera *camera)> init_world,
+    int height, int width, int spp) {
+  cudaError err;
+
+  cudaMalloc(d_states, sizeof(curandState) * height * width);
+  cudaMalloc(d_image, sizeof(glm::vec3) * height * width);
+  cudaMalloc(d_world, sizeof(HitableList));
+  cudaMalloc(d_camera, sizeof(Camera));
+  err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  CudaRandomInit<<<(height * width + 63) / 64, 64>>>(1024, *d_states,
+                                                     height * width);
+  init_world(*d_world, *d_camera);
+
+  cudaDeviceSynchronize();
+  err = cudaGetLastError();
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  {
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    dim3 block(8, 8);
+    dim3 grid((height + block.x - 1) / block.x,
+              (width + block.y - 1) / block.y);
+    cudaEventRecord(start);
+    RayTracing<<<grid, block>>>(*d_world, *d_camera, height, width, spp,
+                                *d_states, *d_image);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    err = cudaGetLastError();
+    CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+    float ms;
+    cudaEventElapsedTime(&ms, start, stop);
+    LOG(INFO) << "Ray tracing finished in " << ms << "ms.";
+  }
+
+  std::vector<glm::vec3> image(height * width);
+  err = cudaMemcpy(image.data(), *d_image, sizeof(glm::vec3) * height * width,
+                   cudaMemcpyDeviceToHost);
+  CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+
+  WriteImage(image, height, width, "image.jpeg");
 }
