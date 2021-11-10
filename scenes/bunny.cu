@@ -47,16 +47,16 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
       Camera(vec3(-0.025, 0.1, -0.5), vec3(-0.025, 0.1, 0), vec3(0, 1, 0),
              pi<double>() * 2 / 9, double(WIDTH) / HEIGHT);
   auto sky = new Sky();
-  vec3 parallelograms[] = {vec3(-0.025 - 0.5, 0.1 - 0.5, 1.2),
-                           vec3(-0.025 + 0.5, 0.1 - 0.5, 1.2),
-                           vec3(-0.025 - 0.5, 0.1 + 0.5, 1.2)};
+  vec3 parallelograms[] = {vec3(-0.025 - 0.5, 0.1 - 0.5, 2),
+                           vec3(-0.025 + 0.5, 0.1 - 0.5, 2),
+                           vec3(-0.025 - 0.5, 0.1 + 0.5, 2)};
   auto green_material_ptr = new Lambertian(vec3(0.12, 0.45, 0.15));
   world->Append(new Parallelogram(&parallelograms[0], green_material_ptr));
   world->Append(sky);
 }
 
 __global__ void InitModel(HitableList *world, Face *faces, int n) {
-  auto white_material_ptr = new Lambertian(vec3(0.72, 0.72, 0.72));
+  auto white_material_ptr = new Metal(vec3(1, 1, 1), 0.5);
   auto bvh = new BVH(faces, n, white_material_ptr);
   world->Append(bvh);
 }

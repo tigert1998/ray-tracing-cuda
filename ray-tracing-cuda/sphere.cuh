@@ -20,4 +20,6 @@ class Sphere : public Hitable {
   double radius_;
   glm::vec3 position_;
   Material* material_ptr_;
+
+  __device__ static void GetUV(const glm::vec3& p, double* u, double* v);
 };

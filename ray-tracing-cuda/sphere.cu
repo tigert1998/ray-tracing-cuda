@@ -1,3 +1,5 @@
+#include <glm/gtc/constants.hpp>
+
 #include "sphere.cuh"
 
 using namespace glm;
@@ -23,6 +25,7 @@ __device__ bool Sphere::Hit(const Ray& ray, double t_from, double t_to,
     vec3 p = ray.position() + float(t) * ray.direction();
     record.normal = normalize(p - this->position());
     record.material_ptr = material_ptr();
+    GetUV(record.normal, &record.u, &record.v);
     *out = record;
     return true;
   }
@@ -33,6 +36,7 @@ __device__ bool Sphere::Hit(const Ray& ray, double t_from, double t_to,
     vec3 p = ray.position() + float(t) * ray.direction();
     record.normal = normalize(p - this->position());
     record.material_ptr = material_ptr();
+    GetUV(record.normal, &record.u, &record.v);
     *out = record;
     return true;
   }
@@ -44,3 +48,17 @@ double Sphere::radius() const { return radius_; }
 vec3 Sphere::position() const { return position_; }
 
 Material* Sphere::material_ptr() const { return material_ptr_; }
+
+__device__ void Sphere::GetUV(const glm::vec3& p, double* u, double* v) {
+  // p: a given point on the sphere of radius one, centered at the origin.
+  // u: returned value [0,1] of angle around the Y axis from X=-1.
+  // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+  //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+  //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+  //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+  auto theta = acos(-p.y);
+  auto phi = atan2(-p.z, p.x) + pi<float>();
+  *u = phi / (2 * pi<float>());
+  *v = theta / pi<float>();
+}

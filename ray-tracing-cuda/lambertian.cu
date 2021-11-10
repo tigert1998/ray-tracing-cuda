@@ -35,7 +35,7 @@ __device__ bool Lambertian::Scatter(const Ray &ray, const HitRecord &record,
                                     Ray *out_ray) {
   if (dot(ray.direction(), record.normal) >= 0) return false;
   auto p = ray.position() + float(record.t) * ray.direction();
-  auto albedo = texture_ptr()->Value(0, 0, p);
+  auto albedo = texture_ptr()->Value(record.u, record.v, p);
   vec3 next_dir = normalize(SphericalRand(state) + record.normal);
   *out_albedo = albedo;
   *out_ray = Ray(p, next_dir);

@@ -30,7 +30,7 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
     bool scattered =
         material_ptr->Scatter(ray, record, states, &attenuation, &reflection);
     auto hit_point = ray.position() + (float)record.t * ray.direction();
-    auto emitted = material_ptr->Emit(0, 0, hit_point);
+    auto emitted = material_ptr->Emit(record.u, record.v, hit_point);
     if (!scattered) {
       result = emitted;
       break;
