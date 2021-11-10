@@ -53,9 +53,9 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
   return result;
 }
 
-__global__ void RayTracing(HitableList *world, Camera *camera, int height,
-                           int width, int spp, curandState *states,
-                           vec3 *out_image) {
+__global__ void PathTracing(HitableList *world, Camera *camera, int height,
+                            int width, int spp, curandState *states,
+                            vec3 *out_image) {
   // 0 <= i < height
   // 0 <= j < width
   int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -82,10 +82,10 @@ __global__ void RayTracing(HitableList *world, Camera *camera, int height,
   out_image[idx] = color;
 }
 
-__global__ void DistributedRayTracing(int rank, int world_size,
-                                      HitableList *world, Camera *camera,
-                                      int height, int width, int spp,
-                                      curandState *states, vec3 *out_image) {
+__global__ void DistributedPathTracing(int rank, int world_size,
+                                       HitableList *world, Camera *camera,
+                                       int height, int width, int spp,
+                                       curandState *states, vec3 *out_image) {
   // 0 <= i < height_per_proc
   // 0 <= j < width_per_proc
   int i_from, j_from, h_per_proc, w_per_proc;

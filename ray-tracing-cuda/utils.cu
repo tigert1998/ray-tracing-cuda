@@ -173,8 +173,8 @@ __host__ void Main(
     dim3 grid((height + block.x - 1) / block.x,
               (width + block.y - 1) / block.y);
     cudaEventRecord(start);
-    RayTracing<<<grid, block>>>(*d_world, *d_camera, height, width, spp,
-                                *d_states, *d_image);
+    PathTracing<<<grid, block>>>(*d_world, *d_camera, height, width, spp,
+                                 *d_states, *d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     err = cudaGetLastError();
@@ -231,9 +231,9 @@ __host__ void DistributedMain(
     dim3 grid((height_per_proc + block.x - 1) / block.x,
               (width_per_proc + block.y - 1) / block.y);
     cudaEventRecord(start);
-    DistributedRayTracing<<<grid, block>>>(rank, world_size, *d_world,
-                                           *d_camera, height, width, spp,
-                                           *d_states, *d_image);
+    DistributedPathTracing<<<grid, block>>>(rank, world_size, *d_world,
+                                            *d_camera, height, width, spp,
+                                            *d_states, *d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     err = cudaGetLastError();

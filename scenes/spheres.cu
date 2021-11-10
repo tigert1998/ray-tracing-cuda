@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
       [](HitableList *world, Camera *camera) {
         InitWorld<<<1, 1>>>(world, camera, d_states);
       },
-      HEIGHT, WIDTH, 30);
+      HEIGHT, WIDTH, 100);
   MPI_Finalize();
   return 0;
 }

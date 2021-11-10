@@ -1,7 +1,7 @@
 # Ray Tracing
 
-- [x] Ray tracing
-- [x] MPI distributed ray tracing
+- [x] Unidirectional path tracing
+- [x] MPI distributed path tracing
 - [x] BVH tree
 - [x] Model loader
 
