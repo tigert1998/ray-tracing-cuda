@@ -63,12 +63,14 @@ __device__ bool BVHNode::Hit(const Ray &ray, double t_from, double t_to,
   if (left_ == nullptr) {
     bool ret = false;
     for (int i = 0; i < n_; i++) {
-      double t;
+      double t, u, v;
       glm::vec3 normal;
-      if (TriangleHit(faces_[i].points, ray, t_from, t_to, &t, &normal)) {
+      if (TriangleHit(faces_[i].points, ray, t_from, t_to, &t, &normal, &u,
+                      &v)) {
         t_to = t;
         out->t = t;
         out->normal = normal;
+        // FIXME
         ret = true;
       }
     }

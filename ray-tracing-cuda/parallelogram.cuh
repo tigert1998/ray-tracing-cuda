@@ -6,7 +6,7 @@
 
 class Parallelogram : public Hitable {
  private:
-  glm::vec3 p_[5];
+  glm::vec3 p_[4];
   Material *material_ptr_;
 
  public:

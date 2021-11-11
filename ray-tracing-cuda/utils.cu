@@ -29,7 +29,8 @@ __global__ void CudaRandomInit(uint64_t seed, curandState *state, int n) {
 }
 
 __device__ bool TriangleHit(const vec3 p[3], const Ray &ray, double t_from,
-                            double t_to, double *out_t, vec3 *out_normal) {
+                            double t_to, double *out_t, vec3 *out_normal,
+                            double *out_u, double *out_v) {
   //  MOLLER_TRUMBORE
   double eps = 1e-7;
   vec3 v0v1 = p[1] - p[0];
@@ -59,6 +60,8 @@ __device__ bool TriangleHit(const vec3 p[3], const Ray &ray, double t_from,
   *out_t = t;
   vec3 n = normalize(cross(v0v1, v0v2));
   *out_normal = dot(ray.direction(), n) < 0 ? n : -n;
+  *out_u = u;
+  *out_v = v;
 
   return true;
 }

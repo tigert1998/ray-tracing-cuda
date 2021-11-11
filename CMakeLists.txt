@@ -28,3 +28,8 @@ add_executable(bunny "scenes/bunny.cu")
 target_link_libraries(bunny ray_tracing assimp)
 set_target_properties(bunny PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 target_compile_features(bunny PUBLIC cxx_std_14)
+
+add_executable(birthday "scenes/birthday.cu")
+target_link_libraries(birthday ray_tracing assimp)
+set_target_properties(birthday PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_compile_features(birthday PUBLIC cxx_std_14)

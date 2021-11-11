@@ -28,7 +28,8 @@ void WriteImage(const std::vector<glm::vec3> &pixels, int height, int width,
                 const std::string &path);
 
 __device__ bool TriangleHit(const glm::vec3 p[3], const Ray &ray, double t_from,
-                            double t_to, double *out_t, glm::vec3 *out_normal);
+                            double t_to, double *out_t, glm::vec3 *out_normal,
+                            double *out_u, double *out_v);
 
 template <typename T>
 __device__ void QuickSort(

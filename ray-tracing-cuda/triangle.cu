@@ -10,7 +10,8 @@ __host__ __device__ Triangle::Triangle(glm::vec3 p[], Material *material_ptr)
 
 __device__ bool Triangle::Hit(const Ray &ray, double t_from, double t_to,
                               HitRecord *out) {
-  if (TriangleHit(p_, ray, t_from, t_to, &out->t, &out->normal)) {
+  if (TriangleHit(p_, ray, t_from, t_to, &out->t, &out->normal, &out->u,
+                  &out->v)) {
     out->material_ptr = material_ptr_;
     return true;
   }
