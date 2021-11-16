@@ -17,7 +17,7 @@ struct AABB : public Hitable {
 };
 
 template <bool HasTexCoord>
-class FaceBase : public Hitable {
+class FaceBase {
  protected:
   glm::vec3 positions_[3];
   glm::vec2 tex_coords_[3];
@@ -31,7 +31,7 @@ class FaceBase : public Hitable {
   }
 
   __device__ bool Hit(const Ray &ray, double t_from, double t_to,
-                      HitRecord *out) override {
+                      HitRecord *out) {
     double u, v;
     bool ret = TriangleHit(positions_, ray, t_from, t_to, &out->t, &out->normal,
                            &u, &v);
@@ -47,7 +47,7 @@ class FaceBase : public Hitable {
 };
 
 template <>
-class FaceBase<false> : public Hitable {
+class FaceBase<false> {
  public:
   glm::vec3 positions_[3];
 
@@ -56,7 +56,7 @@ class FaceBase<false> : public Hitable {
   }
 
   __device__ bool Hit(const Ray &ray, double t_from, double t_to,
-                      HitRecord *out) override {
+                      HitRecord *out) {
     double u, v;
     return TriangleHit(positions_, ray, t_from, t_to, &out->t, &out->normal, &u,
                        &v);
@@ -100,7 +100,7 @@ template <typename T, typename BV>
 class BVHNode : public Hitable {
  private:
   // tuned for 2080 ti
-  constexpr static int kMin = 4096;
+  constexpr static int kMin = 2048;
 
   T *objs_;
   int n_, mid_;
