@@ -31,28 +31,6 @@ __device__ bool TriangleHit(const glm::vec3 p[3], const Ray &ray, double t_from,
                             double t_to, double *out_t, glm::vec3 *out_normal,
                             double *out_u, double *out_v);
 
-template <typename T>
-__device__ void QuickSort(T *array, int low, int high) {
-  int i = low;
-  int j = high;
-  int idx = (i + j) / 2;
-  T &pivot = array[idx];
-
-  while (i <= j) {
-    while (array[i] < pivot) i++;
-    while (idx < j && !(array[j] < pivot)) j--;
-    if (i <= j) {
-      auto temp = array[i];
-      array[i] = array[j];
-      array[j] = temp;
-      i++;
-      j--;
-    }
-  }
-  if (j > low) QuickSort(array, low, j);
-  if (i < high) QuickSort(array, i, high);
-}
-
 struct Layer;
 __device__ void DebugTracePath(Layer *layers, int n);
 

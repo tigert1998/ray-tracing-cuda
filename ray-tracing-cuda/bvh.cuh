@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thrust/sort.h>
+
 #include <glm/glm.hpp>
 
 #include "hitable.cuh"
@@ -91,7 +93,7 @@ class Face : public FaceBase<HasTexCoord> {
     return split_axis;
   }
 
-  __device__ int operator<(const Face<HasTexCoord> &a) {
+  __device__ int operator<(const Face<HasTexCoord> &a) const {
     return this->positions_[0].x < a.positions_[0].x;
   }
 };
@@ -112,7 +114,7 @@ class BVHNode : public Hitable {
     bv_ = T::GetBV(objs_, n_);
     if (n_ <= kMin) return;
     int split_axis = T::GetSplitAxis(objs_, n_);
-    QuickSort<T>(objs_, 0, n - 1);
+    thrust::sort(thrust::device, objs_, objs_ + n);
     mid_ = (n - 1) / 2;
     left_ = new BVHNode(objs_, mid_ + 1);
     right_ = new BVHNode(objs_ + mid_ + 1, n - mid_ - 1);
