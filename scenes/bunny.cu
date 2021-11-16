@@ -35,7 +35,7 @@ curandState *d_states;
 Camera *d_camera;
 HitableList *d_world;
 glm::vec3 *d_image;
-Face *d_faces;
+Face<false> *d_faces;
 
 using glm::pi;
 using glm::vec3;
@@ -55,9 +55,9 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
   world->Append(sky);
 }
 
-__global__ void InitModel(HitableList *world, Face *faces, int n) {
+__global__ void InitModel(HitableList *world, Face<false> *faces, int n) {
   auto white_material_ptr = new Metal(vec3(1, 1, 1), 0.5);
-  auto bvh = new BVH(faces, n, white_material_ptr);
+  auto bvh = new BVH<Face<false>, AABB>(faces, n, white_material_ptr);
   world->Append(bvh);
 }
 
@@ -65,25 +65,25 @@ void ImportModel(const std::string &path) {
   const aiScene *scene = aiImportFile(
       path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace |
                         aiProcess_Triangulate);
-  std::vector<Face> faces;
+  std::vector<Face<false>> faces;
   for (int i = 0; i < scene->mNumMeshes; i++) {
     auto mesh = scene->mMeshes[i];
     faces.reserve(faces.capacity() + mesh->mNumFaces);
     for (int j = 0; j < mesh->mNumFaces; j++) {
-      Face face;
+      Face<false> face;
       for (int k = 0; k < 3; k++) {
         int idx = mesh->mFaces[j].mIndices[k];
         auto vertex = mesh->mVertices[idx];
-        face.points[k] = vec3(vertex.x, vertex.y, vertex.z);
+        face.position(k) = vec3(vertex.x, vertex.y, vertex.z);
       }
       faces.emplace_back(face);
     }
   }
   aiReleaseImport(scene);
-  auto err = cudaMalloc(&d_faces, sizeof(Face) * faces.size());
+  uint32_t size = sizeof(Face<false>) * faces.size();
+  auto err = cudaMalloc(&d_faces, size);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-  err = cudaMemcpy(d_faces, faces.data(), sizeof(Face) * faces.size(),
-                   cudaMemcpyHostToDevice);
+  err = cudaMemcpy(d_faces, faces.data(), size, cudaMemcpyHostToDevice);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
   InitModel<<<1, 1>>>(d_world, d_faces, faces.size());
   cudaDeviceSynchronize();

@@ -208,19 +208,21 @@ __host__ void DistributedMain(
   LOG(INFO) << "[" << rank << " / " << world_size << "] workload: (" << i_from
             << ", " << j_from << ", " << i_from + height_per_proc << ", "
             << j_from + width_per_proc << ")";
-
   cudaError err;
 
-  cudaMalloc(d_states, sizeof(curandState) * width_per_proc * height_per_proc);
   cudaMalloc(d_image, sizeof(glm::vec3) * width_per_proc * height_per_proc);
   cudaMalloc(d_world, sizeof(HitableList));
   cudaMalloc(d_camera, sizeof(Camera));
+  cudaMalloc(d_states, sizeof(curandState) * width_per_proc * height_per_proc);
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+  LOG(INFO) << "cuda memory allocated";
 
   CudaRandomInit<<<(width_per_proc * height_per_proc + 63) / 64, 64>>>(
       10086, *d_states, height_per_proc * width_per_proc);
+  LOG(INFO) << "cuda random initialized";
   init_world(*d_world, *d_camera);
+  LOG(INFO) << "world initialized";
 
   cudaDeviceSynchronize();
   err = cudaGetLastError();
