@@ -9,14 +9,7 @@
 #include <vector>
 
 #include "bvh.cuh"
-
-template <typename T>
-glm::mat4 Mat4FromAimatrix4x4(aiMatrix4x4t<T> matrix) {
-  glm::mat4 res;
-  for (int i = 0; i < 4; i++)
-    for (int j = 0; j < 4; j++) res[j][i] = matrix[i][j];
-  return res;
-}
+#include "utils.cuh"
 
 template <bool HasTexCoord>
 struct Mesh {
@@ -43,6 +36,14 @@ void SetFace<false>(Face<false> *face, int i, glm::vec3 position,
                     glm::vec2 tex_coord) {
   face->position(i) = position;
 }
+
+template <typename T>
+glm::mat4 Mat4FromAimatrix4x4(aiMatrix4x4t<T> matrix) {
+  glm::mat4 res;
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++) res[j][i] = matrix[i][j];
+  return res;
+}
 };  // namespace
 
 template <bool HasTexCoord>
@@ -55,15 +56,15 @@ struct Model {
     const aiScene *scene = aiImportFile(
         path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace |
                           aiProcess_Triangulate);
-    textures.resize(scene->mNumTextures);
+    textures.resize(scene->mNumMaterials);
     meshes.resize(scene->mNumMeshes);
-    RecursivelyInitNodes(scene, scene->mRootNode, transform);
+    RecursivelyInitNodes(path, scene, scene->mRootNode, transform);
     aiReleaseImport(scene);
   }
 
  private:
-  void RecursivelyInitNodes(const aiScene *scene, aiNode *node,
-                            glm::mat4 parent_transform) {
+  void RecursivelyInitNodes(const std::string &root_path, const aiScene *scene,
+                            aiNode *node, glm::mat4 parent_transform) {
     LOG(INFO) << "initializing node \"" << node->mName.C_Str() << "\"...";
     glm::mat4 transform =
         parent_transform * Mat4FromAimatrix4x4(node->mTransformation);
@@ -77,7 +78,10 @@ struct Model {
         aiString path;
         material->GetTexture(aiTextureType_DIFFUSE, 0, &path);
         int channels;
-        auto data = stbi_load(path.C_Str(), &textures[texture_id].width,
+        std::string image_path = ParentPath(ParentPath(root_path)) +
+                                 "/textures/" + BaseName(path.C_Str());
+        LOG(INFO) << "loading texture at: \"" << image_path << "\"";
+        auto data = stbi_load(image_path.c_str(), &textures[texture_id].width,
                               &textures[texture_id].height, &channels, 3);
         textures[texture_id].data =
             std::string(data, data + (textures[texture_id].width *
@@ -104,7 +108,7 @@ struct Model {
       }
     }
     for (int i = 0; i < node->mNumChildren; i++) {
-      RecursivelyInitNodes(scene, node->mChildren[i], transform);
+      RecursivelyInitNodes(root_path, scene, node->mChildren[i], transform);
     }
   }
 };

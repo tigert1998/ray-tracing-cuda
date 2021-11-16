@@ -15,6 +15,10 @@
 #include "hitable_list.cuh"
 #include "ray.cuh"
 
+std::string BaseName(const std::string &path);
+
+std::string ParentPath(const std::string &path);
+
 __inline__ __device__ float CudaRandomFloat(float min, float max,
                                             curandState *state) {
   // (min, max]
