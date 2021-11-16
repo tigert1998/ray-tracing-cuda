@@ -1,6 +1,5 @@
-#include <assimp/cimport.h>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+#define STB_IMAGE_IMPLEMENTATION
+
 #include <mpi.h>
 
 #include <cstdio>
@@ -20,6 +19,7 @@
 #include "hitable_list.cuh"
 #include "lambertian.cuh"
 #include "metal.cuh"
+#include "model.h"
 #include "parallelepiped.cuh"
 #include "parallelogram.cuh"
 #include "ray_tracing.cuh"
@@ -62,30 +62,15 @@ __global__ void InitModel(HitableList *world, Face<false> *faces, int n) {
 }
 
 void ImportModel(const std::string &path) {
-  const aiScene *scene = aiImportFile(
-      path.c_str(), aiProcess_GlobalScale | aiProcess_CalcTangentSpace |
-                        aiProcess_Triangulate);
-  std::vector<Face<false>> faces;
-  for (int i = 0; i < scene->mNumMeshes; i++) {
-    auto mesh = scene->mMeshes[i];
-    faces.reserve(faces.capacity() + mesh->mNumFaces);
-    for (int j = 0; j < mesh->mNumFaces; j++) {
-      Face<false> face;
-      for (int k = 0; k < 3; k++) {
-        int idx = mesh->mFaces[j].mIndices[k];
-        auto vertex = mesh->mVertices[idx];
-        face.position(k) = vec3(vertex.x, vertex.y, vertex.z);
-      }
-      faces.emplace_back(face);
-    }
-  }
-  aiReleaseImport(scene);
-  uint32_t size = sizeof(Face<false>) * faces.size();
+  Model<false> model(path, glm::mat4(1));
+
+  uint32_t size = sizeof(Face<false>) * model.meshes[0].faces.size();
   auto err = cudaMalloc(&d_faces, size);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-  err = cudaMemcpy(d_faces, faces.data(), size, cudaMemcpyHostToDevice);
+  err = cudaMemcpy(d_faces, model.meshes[0].faces.data(), size,
+                   cudaMemcpyHostToDevice);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-  InitModel<<<1, 1>>>(d_world, d_faces, faces.size());
+  InitModel<<<1, 1>>>(d_world, d_faces, model.meshes[0].faces.size());
   cudaDeviceSynchronize();
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
@@ -114,7 +99,7 @@ int main(int argc, char **argv) {
       &d_states, &d_camera, &d_world, &d_image,
       [](HitableList *world, Camera *camera) {
         InitWorld<<<1, 1>>>(world, camera);
-        ImportModel("bunny.obj");
+        ImportModel("resources/bunny.obj");
       },
       HEIGHT, WIDTH, 20);
   MPI_Finalize();

@@ -175,7 +175,7 @@ class BVH : public Hitable {
   __device__ bool Hit(const Ray &ray, double t_from, double t_to,
                       HitRecord *out) override {
     if (root_->Hit(ray, t_from, t_to, out)) {
-      out->material_ptr = material_ptr_;
+      if (material_ptr_ != nullptr) out->material_ptr = material_ptr_;
       return true;
     }
     return false;

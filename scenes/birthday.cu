@@ -80,8 +80,8 @@ __global__ void InitWorld(HitableList *world, Camera *camera,
 }
 
 void InitImageTextures(DeviceImage *earthmap) {
-  auto data = stbi_load("earthmap.jpg", &earthmap->width, &earthmap->height,
-                        &earthmap->components, 0);
+  auto data = stbi_load("resources/earthmap.jpg", &earthmap->width,
+                        &earthmap->height, &earthmap->components, 0);
   int size = earthmap->height * earthmap->width * earthmap->components;
   cudaMalloc(&earthmap->image, size);
   cudaMemcpy(earthmap->image, data, size, cudaMemcpyHostToDevice);
