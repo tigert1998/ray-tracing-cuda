@@ -80,10 +80,10 @@ void ImportModel(const std::string &path) {
     }
   }
   aiReleaseImport(scene);
-  auto err = cudaMalloc(&d_faces, sizeof(Face<false>) * faces.size());
+  uint32_t size = sizeof(Face<false>) * faces.size();
+  auto err = cudaMalloc(&d_faces, size);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
-  err = cudaMemcpy(d_faces, faces.data(), sizeof(Face<false>) * faces.size(),
-                   cudaMemcpyHostToDevice);
+  err = cudaMemcpy(d_faces, faces.data(), size, cudaMemcpyHostToDevice);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
   InitModel<<<1, 1>>>(d_world, d_faces, faces.size());
   cudaDeviceSynchronize();
