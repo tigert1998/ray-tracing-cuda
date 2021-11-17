@@ -9,6 +9,7 @@
 #include <stb_image_write.h>
 
 #include <fstream>
+#include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <string>
 
@@ -107,59 +108,24 @@ __device__ void DebugTracePath(Layer *layers, int n) {
   }
 }
 
-__host__ __device__ void GetWorkload(int height, int width, int rank,
-                                     int world_size, int *out_i_from,
-                                     int *out_j_from, int *out_height_per_proc,
-                                     int *out_width_per_proc) {
-  int div = width / world_size;
-  int mod = width % world_size;
-  *out_height_per_proc = height;
-  *out_width_per_proc = div + (rank < mod);
-  *out_i_from = 0;
-  if (rank < mod) {
-    *out_j_from = (div + 1) * rank;
-  } else {
-    *out_j_from = (div + 1) * mod + div * (rank - mod);
-  }
+__host__ __device__ int GetWorkload(int rank, int world_size, int spp) {
+  return spp / world_size + (int)(rank < (spp % world_size));
 }
 
 __host__ void GatherImageData(int height, int width,
-                              const std::vector<glm::vec3> &send_buf,
+                              std::vector<glm::vec3> &send_buf, int spp,
                               std::vector<glm::vec3> *out_image) {
   int rank, world_size;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::vector<int> i_froms(world_size), j_froms(world_size),
-      height_per_procs(world_size), width_per_procs(world_size),
-      dis(world_size), counts(world_size);
-
-  for (int i = 0; i < world_size; i++) {
-    GetWorkload(height, width, i, world_size, &i_froms[i], &j_froms[i],
-                &height_per_procs[i], &width_per_procs[i]);
-    counts[i] = height_per_procs[i] * width_per_procs[i] * sizeof(glm::vec3);
-    if (i == 0) {
-      dis[0] = 0;
-    } else {
-      dis[i] = dis[i - 1] + counts[i - 1];
-    }
-  }
-
-  std::vector<glm::vec3> gathered(height * width);
-  MPI_Gatherv(send_buf.data(), counts[rank], MPI_BYTE, gathered.data(),
-              counts.data(), dis.data(), MPI_BYTE, 0, MPI_COMM_WORLD);
-
-  if (rank == 0) {
-    out_image->resize(height * width);
-    for (int other = 0; other < world_size; other++) {
-      for (int i = 0; i < height_per_procs[other]; i++)
-        for (int j = 0; j < width_per_procs[other]; j++) {
-          int idx =
-              i * width_per_procs[other] + j + dis[other] / sizeof(glm::vec3);
-          int to_idx = (i_froms[other] + i) * width + (j_froms[other] + j);
-          out_image->operator[](to_idx) = gathered[idx];
-        }
-    }
+  out_image->resize(height * width);
+  for (int i = 0; i < height * width; i++) out_image->at(i) = glm::vec3(0);
+  MPI_Reduce(send_buf.data(), out_image->data(), height * width * 3, MPI_FLOAT,
+             MPI_SUM, 0, MPI_COMM_WORLD);
+  for (int i = 0; i < height * width; i++) {
+    out_image->at(i) =
+        glm::sqrt(glm::clamp(out_image->at(i) / (float)spp, 0.f, 1.f));
   }
 }
 
@@ -193,7 +159,7 @@ __host__ void Main(
     dim3 grid((height + block.x - 1) / block.x,
               (width + block.y - 1) / block.y);
     cudaEventRecord(start);
-    PathTracing<<<grid, block>>>(*d_world, *d_camera, height, width, spp,
+    PathTracing<<<grid, block>>>(*d_world, *d_camera, height, width, spp, true,
                                  *d_states, *d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
@@ -217,26 +183,24 @@ __host__ void DistributedMain(
     glm::vec3 **d_image,
     nvstd::function<void(HitableList *world, Camera *camera)> init_world,
     int height, int width, int spp) {
-  int rank, world_size, i_from, j_from, height_per_proc, width_per_proc;
+  int rank, world_size;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  GetWorkload(height, width, rank, world_size, &i_from, &j_from,
-              &height_per_proc, &width_per_proc);
-  LOG(INFO) << "[" << rank << " / " << world_size << "] workload: (" << i_from
-            << ", " << j_from << ", " << i_from + height_per_proc << ", "
-            << j_from + width_per_proc << ")";
+  int local_spp = GetWorkload(rank, world_size, spp);
+  LOG(INFO) << "[" << rank << " / " << world_size
+            << "] workload: " << local_spp;
   cudaError err;
 
-  cudaMalloc(d_image, sizeof(glm::vec3) * width_per_proc * height_per_proc);
+  cudaMalloc(d_image, sizeof(glm::vec3) * height * width);
   cudaMalloc(d_world, sizeof(HitableList));
   cudaMalloc(d_camera, sizeof(Camera));
-  cudaMalloc(d_states, sizeof(curandState) * width_per_proc * height_per_proc);
+  cudaMalloc(d_states, sizeof(curandState) * height * width);
   err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
   LOG(INFO) << "cuda memory allocated";
 
-  CudaRandomInit<<<(width_per_proc * height_per_proc + 63) / 64, 64>>>(
-      10086, *d_states, height_per_proc * width_per_proc);
+  CudaRandomInit<<<(height * width + 63) / 64, 64>>>(10086, *d_states,
+                                                     height * width);
   LOG(INFO) << "cuda random initialized";
   init_world(*d_world, *d_camera);
   LOG(INFO) << "world initialized";
@@ -250,12 +214,11 @@ __host__ void DistributedMain(
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     dim3 block(8, 8);
-    dim3 grid((height_per_proc + block.x - 1) / block.x,
-              (width_per_proc + block.y - 1) / block.y);
+    dim3 grid((height + block.x - 1) / block.x,
+              (width + block.y - 1) / block.y);
     cudaEventRecord(start);
-    DistributedPathTracing<<<grid, block>>>(rank, world_size, *d_world,
-                                            *d_camera, height, width, spp,
-                                            *d_states, *d_image);
+    PathTracing<<<grid, block>>>(*d_world, *d_camera, height, width, local_spp,
+                                 false, *d_states, *d_image);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     err = cudaGetLastError();
@@ -266,14 +229,13 @@ __host__ void DistributedMain(
               << "] Ray tracing finished in " << ms << "ms.";
   }
 
-  std::vector<glm::vec3> image(height_per_proc * width_per_proc);
-  err = cudaMemcpy(image.data(), *d_image,
-                   sizeof(glm::vec3) * height_per_proc * width_per_proc,
+  std::vector<glm::vec3> image(height * width);
+  err = cudaMemcpy(image.data(), *d_image, sizeof(glm::vec3) * height * width,
                    cudaMemcpyDeviceToHost);
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
 
   std::vector<glm::vec3> final_image;
-  GatherImageData(height, width, image, &final_image);
+  GatherImageData(height, width, image, spp, &final_image);
   if (rank == 0) {
     WriteImage(final_image, height, width, "image.jpeg");
   }

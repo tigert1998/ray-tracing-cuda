@@ -56,7 +56,7 @@ __global__ void InitWorld(HitableList *world, Camera *camera) {
 }
 
 __global__ void InitModel(HitableList *world, Face<false> *faces, int n) {
-  auto white_material_ptr = new Metal(vec3(1, 1, 1), 0.5);
+  auto white_material_ptr = new Lambertian(vec3(1, 1, 1));
   auto bvh = new BVH<Face<false>, AABB>(faces, n, white_material_ptr);
   world->Append(bvh);
 }

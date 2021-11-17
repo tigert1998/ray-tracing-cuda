@@ -54,8 +54,8 @@ __device__ glm::vec3 Trace(HitableList *world, Ray ray, curandState *states) {
 }
 
 __global__ void PathTracing(HitableList *world, Camera *camera, int height,
-                            int width, int spp, curandState *states,
-                            vec3 *out_image) {
+                            int width, int spp, bool post_processing,
+                            curandState *states, vec3 *out_image) {
   // 0 <= i < height
   // 0 <= j < width
   int i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -75,44 +75,11 @@ __global__ void PathTracing(HitableList *world, Camera *camera, int height,
     auto temp = Trace(world, ray, states + idx);
     color += temp;
   }
-  color /= float(spp);
-  color = glm::clamp(color, 0.f, 1.f);
-  // gamma correction
-  color = glm::sqrt(color);
-  out_image[idx] = color;
-}
-
-__global__ void DistributedPathTracing(int rank, int world_size,
-                                       HitableList *world, Camera *camera,
-                                       int height, int width, int spp,
-                                       curandState *states, vec3 *out_image) {
-  // 0 <= i < height_per_proc
-  // 0 <= j < width_per_proc
-  int i_from, j_from, h_per_proc, w_per_proc;
-  GetWorkload(height, width, rank, world_size, &i_from, &j_from, &h_per_proc,
-              &w_per_proc);
-
-  int i = threadIdx.x + blockDim.x * blockIdx.x;
-  int j = threadIdx.y + blockDim.y * blockIdx.y;
-  if (i >= h_per_proc || j >= w_per_proc) return;
-  int idx = i * w_per_proc + j;
-
-  auto color = vec3(0);
-  for (int k = 0; k < spp; k++) {
-    double x = (CudaRandomFloat(0, 1, states + idx) + double(j + j_from)) /
-               double(width);
-    double y =
-        (CudaRandomFloat(0, 1, states + idx) + double(height - (i + i_from))) /
-        double(height);
-    x = 2 * x - 1;
-    y = 2 * y - 1;
-    auto ray = camera->RayAt(x, y, states + idx);
-    auto temp = Trace(world, ray, states + idx);
-    color += temp;
+  if (post_processing) {
+    color /= float(spp);
+    color = glm::clamp(color, 0.f, 1.f);
+    // gamma correction
+    color = glm::sqrt(color);
   }
-  color /= float(spp);
-  color = glm::clamp(color, 0.f, 1.f);
-  // gamma correction
-  color = glm::sqrt(color);
   out_image[idx] = color;
 }

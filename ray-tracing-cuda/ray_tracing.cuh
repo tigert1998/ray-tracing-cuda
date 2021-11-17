@@ -17,11 +17,5 @@ struct Layer {
 __device__ glm::vec3 Trace(HitableList *world, Ray ray);
 
 __global__ void PathTracing(HitableList *world, Camera *camera, int height,
-                            int width, int spp, curandState *states,
-                            glm::vec3 *out_image);
-
-__global__ void DistributedPathTracing(int rank, int world_size,
-                                       HitableList *world, Camera *camera,
-                                       int height, int width, int spp,
-                                       curandState *states,
-                                       glm::vec3 *out_image);
+                            int width, int spp, bool post_processing,
+                            curandState *states, glm::vec3 *out_image);
