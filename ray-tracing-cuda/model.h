@@ -95,8 +95,8 @@ struct Model {
         for (int k = 0; k < 3; k++) {
           int idx = mesh->mFaces[j].mIndices[k];
           auto vertex = mesh->mVertices[idx];
-          glm::vec2 vec2;
-          if (HasTexCoord) {
+          glm::vec2 vec2(0);
+          if (HasTexCoord && mesh->HasTextureCoords(0)) {
             vec2 = glm::vec2(mesh->mTextureCoords[0][idx].x,
                              mesh->mTextureCoords[0][idx].y);
           }
