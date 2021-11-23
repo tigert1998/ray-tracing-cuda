@@ -82,10 +82,10 @@ struct Model {
                                  "/textures/" + BaseName(path.C_Str());
         LOG(INFO) << "loading texture at: \"" << image_path << "\"";
         auto data = stbi_load(image_path.c_str(), &textures[texture_id].width,
-                              &textures[texture_id].height, &channels, 3);
+                              &textures[texture_id].height, &channels, 4);
         textures[texture_id].data =
             std::string(data, data + (textures[texture_id].width *
-                                      textures[texture_id].height * 3));
+                                      textures[texture_id].height * 4));
         stbi_image_free(data);
         meshes[id].texture_id = texture_id;
       }

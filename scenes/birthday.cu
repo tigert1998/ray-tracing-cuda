@@ -31,13 +31,8 @@ curandState *d_states;
 Camera *d_camera;
 HitableList *d_world;
 glm::vec3 *d_image;
-
-struct DeviceImage {
-  uint8_t *image;
-  int height, width, components;
-};
-
-DeviceImage d_earthmap;
+uint8_t *d_tex_image;
+cudaTextureObject_t tex;
 
 using glm::pi;
 using glm::rotateX;
@@ -45,7 +40,7 @@ using glm::rotateY;
 using glm::vec3;
 
 __global__ void InitWorld(HitableList *world, Camera *camera,
-                          DeviceImage earthmap) {
+                          cudaTextureObject_t tex) {
   new (world) HitableList();
   new (camera) Camera(vec3(278, 278, -800), vec3(278, 278, 0), vec3(0, 1, 0),
                       pi<double>() * 2 / 9, double(WIDTH) / HEIGHT);
@@ -56,8 +51,7 @@ __global__ void InitWorld(HitableList *world, Camera *camera,
 
   auto light_material_ptr =
       new DiffuseLight(new ConstantTexture(vec3(1, 1, 1)));
-  auto earthmap_texture_ptr = new ImageTexture(
-      earthmap.height, earthmap.width, earthmap.components, earthmap.image);
+  auto earthmap_texture_ptr = new ImageTexture(tex);
   auto earthmap_material_ptr = new Lambertian(earthmap_texture_ptr);
   auto sky = new Sky();
 
@@ -79,22 +73,27 @@ __global__ void InitWorld(HitableList *world, Camera *camera,
   world->Append(new Sphere(vec3(278, 278, 0), 100, earthmap_material_ptr));
 }
 
-void InitImageTextures(DeviceImage *earthmap) {
-  auto data = stbi_load("resources/earthmap.jpg", &earthmap->width,
-                        &earthmap->height, &earthmap->components, 0);
-  int size = earthmap->height * earthmap->width * earthmap->components;
-  cudaMalloc(&earthmap->image, size);
-  cudaMemcpy(earthmap->image, data, size, cudaMemcpyHostToDevice);
+cudaTextureObject_t InitImageTextures() {
+  int width, height, channels;
+  uint64_t pitch_in_bytes;
+  auto data =
+      stbi_load("resources/earthmap.jpg", &width, &height, &channels, 4);
+  cudaMallocPitch(&d_tex_image, &pitch_in_bytes, 4 * width, height);
+  cudaMemcpy2D(d_tex_image, pitch_in_bytes, data, 4 * width, 4 * width, height,
+               cudaMemcpyHostToDevice);
+  auto tex = ImageTexture::CreateCudaTextureObj(d_tex_image, height, width,
+                                                pitch_in_bytes);
   auto err = cudaGetLastError();
   CHECK(err == cudaSuccess) << cudaGetErrorString(err);
+  return tex;
 }
 
 int main() {
   Main(
       &d_states, &d_camera, &d_world, &d_image,
       [](HitableList *world, Camera *camera) {
-        InitImageTextures(&d_earthmap);
-        InitWorld<<<1, 1>>>(world, camera, d_earthmap);
+        auto tex = InitImageTextures();
+        InitWorld<<<1, 1>>>(world, camera, tex);
       },
       HEIGHT, WIDTH, 200);
   return 0;
